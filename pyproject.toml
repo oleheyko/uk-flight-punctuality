@@ -1,0 +1,11 @@
+[project]
+name = "uk-flight-punctionality"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "beautifulsoup4>=4.14.3",
+    "google-cloud-storage>=3.10.1",
+    "requests>=2.33.1",
+]
