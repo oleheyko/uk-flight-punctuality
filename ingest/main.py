@@ -3,10 +3,12 @@ from urllib.parse import urljoin
 import time
 
 import requests
+from google.cloud import bigquery
 
 from config import Config
 from scraper import fetch_page, parse_full_analysis_csv_links
 from storage import upload_blob_if_missing
+from bigquery_utils import ensure_dataset, load_csvs_to_table
 
 
 def setup_logging() -> None:
@@ -65,31 +67,60 @@ def main() -> None:
     skipped = 0
     failed = 0
 
-    for record in records:
-        year_dir = record["reporting_period"][:4]
-        destination_blob = (
-            f"{config.gcs_prefix.rstrip('/')}/{year_dir}/{record['filename']}"
-        )
-        try:
-            result = upload_blob_if_missing(
-                bucket_name=config.bucket_name,
-                blob_name=destination_blob,
-                source_url=record["url"],
-                session=session,
-                overwrite=config.overwrite,
-                timeout=config.request_timeout,
-            )
-            if result == "uploaded":
-                uploaded += 1
-            elif result == "skipped":
-                skipped += 1
-        except Exception as exc:
-            failed += 1
-            logging.exception("Failed to process %s: %s", record["url"], exc)
-            
-        time.sleep(2)  # Be polite and avoid hammering the server
+    # for record in records:
+    #     year_dir = record["reporting_period"][:4]
+    #     destination_blob = (
+    #         f"{config.gcs_prefix.rstrip('/')}/{year_dir}/{record['filename']}"
+    #     )
+    #     try:
+    #         result = upload_blob_if_missing(
+    #             bucket_name=config.bucket_name,
+    #             blob_name=destination_blob,
+    #             source_url=record["url"],
+    #             session=session,
+    #             overwrite=config.overwrite,
+    #             timeout=config.request_timeout,
+    #         )
+    #         if result == "uploaded":
+    #             uploaded += 1
+    #         elif result == "skipped":
+    #             skipped += 1
+    #     except Exception as exc:
+    #         failed += 1
+    #         logging.exception("Failed to process %s: %s", record["url"], exc)
 
-    logging.info("Ingest complete: uploaded=%d skipped=%d failed=%d", uploaded, skipped, failed)
+    #     time.sleep(2)  # Be polite and avoid hammering the server
+
+    # logging.info("Ingest complete: uploaded=%d skipped=%d failed=%d", uploaded, skipped, failed)
+
+    if records:
+        bq_client = (
+            bigquery.Client(project=config.bigquery_project)
+            if config.bigquery_project
+            else bigquery.Client()
+        )
+        ensure_dataset(
+            client=bq_client,
+            dataset_id=config.bigquery_dataset,
+            location=config.bigquery_location,
+        )
+
+        years = sorted({record["reporting_period"][:4] for record in records})
+        for year in years:
+            table_name = f"{config.bigquery_table_prefix}{year}"
+            try:
+                load_csvs_to_table(
+                    client=bq_client,
+                    bucket_name=config.bucket_name,
+                    gcs_prefix=config.gcs_prefix,
+                    year=year,
+                    dataset_id=config.bigquery_dataset,
+                    table_name=table_name,
+                )
+            except Exception as exc:
+                logging.exception("Failed to load BigQuery table for year %s: %s", year, exc)
+    else:
+        logging.info("No records found; skipping BigQuery load.")
 
 
 if __name__ == "__main__":

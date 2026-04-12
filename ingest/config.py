@@ -17,6 +17,10 @@ class Config:
         gcs_prefix: str,
         overwrite: bool,
         request_timeout: int,
+        bigquery_project: str,
+        bigquery_dataset: str,
+        bigquery_table_prefix: str,
+        bigquery_location: str,
     ):
         self.bucket_name = bucket_name
         self.caa_base_url = caa_base_url
@@ -25,6 +29,10 @@ class Config:
         self.gcs_prefix = gcs_prefix
         self.overwrite = overwrite
         self.request_timeout = request_timeout
+        self.bigquery_project = bigquery_project
+        self.bigquery_dataset = bigquery_dataset
+        self.bigquery_table_prefix = bigquery_table_prefix
+        self.bigquery_location = bigquery_location
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -60,6 +68,11 @@ class Config:
         overwrite = parse_bool(os.getenv("OVERWRITE", "false"), default=False)
         request_timeout = int(os.getenv("REQUEST_TIMEOUT", "60"))
 
+        bigquery_project = os.getenv("BIGQUERY_PROJECT", "").strip()
+        bigquery_dataset = os.getenv("BIGQUERY_DATASET", "flight_data").strip()
+        bigquery_table_prefix = os.getenv("BIGQUERY_TABLE_PREFIX", "punctuality_data_").strip()
+        bigquery_location = os.getenv("BIGQUERY_LOCATION", "EU").strip()
+
         return cls(
             bucket_name=bucket_name,
             caa_base_url=caa_base_url,
@@ -68,4 +81,8 @@ class Config:
             gcs_prefix=gcs_prefix,
             overwrite=overwrite,
             request_timeout=request_timeout,
+            bigquery_project=bigquery_project,
+            bigquery_dataset=bigquery_dataset,
+            bigquery_table_prefix=bigquery_table_prefix,
+            bigquery_location=bigquery_location,
         )

@@ -20,6 +20,14 @@ This pipeline downloads monthly **Punctuality Statistics Full Analysis (CSV docu
   Files are uploaded to year folders under this prefix, for example `raw/2025/`.
 - `OVERWRITE` - `true` or `false` to control re-upload behavior
 - `REQUEST_TIMEOUT` - request timeout in seconds for HTTP calls
+- `BIGQUERY_PROJECT` - optional BigQuery project ID; if omitted, client defaults are used
+- `BIGQUERY_DATASET` - BigQuery dataset name, default `flight_data`
+- `BIGQUERY_TABLE_PREFIX` - BigQuery table prefix for yearly tables, default `punctuality_data_`
+- `BIGQUERY_LOCATION` - BigQuery dataset location for creation, default `EU`
+
+## BigQuery behavior
+
+After raw files are uploaded to GCS, the pipeline loads yearly CSV data into BigQuery tables inside the configured dataset. For example, it creates or replaces tables named `punctuality_data_2000`, `punctuality_data_2001`, etc.
 
 ## How to run locally
 

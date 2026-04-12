@@ -7,11 +7,10 @@ from bs4 import BeautifulSoup
 
 from utils import build_record_filename, extract_reporting_period
 
-MONTHLY_REPORT_RE = re.compile(r"20(?:0\d|1\d|2[0-5])(?:0[1-9]|1[0-2])")
-CSV_MARKER_RE = re.compile(r"csv", re.IGNORECASE)
-FULL_ANALYSIS_RE = re.compile(r"full\s*analysis|fullanalysis", re.IGNORECASE)
-SUMMARY_RE = re.compile(r"summary", re.IGNORECASE)
-PUNCT_STATS_RE = re.compile(r"punctuality\s*statistics", re.IGNORECASE)
+pattern = re.compile(
+    r'^(?!.*(?:Arrival\s*Departure|Arr\s*Dep|ArrDep))(?=.*Full\s*Analysis).*$',
+    re.IGNORECASE
+)
 
 
 def fetch_page(session, url: str, timeout: int) -> str:
@@ -38,13 +37,7 @@ def parse_full_analysis_csv_links(html: str, base_url: str) -> List[Dict[str, st
         href = str(href)
 
         # Match only monthly full analysis CSV documents from the year range.
-        if not MONTHLY_REPORT_RE.search(link_text):
-            continue
-        if SUMMARY_RE.search(link_text):
-            continue
-        if not FULL_ANALYSIS_RE.search(link_text):
-            continue
-        if not CSV_MARKER_RE.search(link_text):
+        if not pattern.search(link_text):
             continue
 
         reporting_period = extract_reporting_period(link_text)
