@@ -3,11 +3,11 @@ from urllib.parse import urljoin
 import time
 
 import requests
-from google.cloud import bigquery
+from google.cloud import bigquery, storage
 
 from config import Config
 from scraper import fetch_page, parse_full_analysis_csv_links
-from storage import upload_blob_if_missing
+from storage import list_blob_names, upload_blob_if_missing
 from bigquery_utils import ensure_dataset, load_csvs_to_table
 
 
@@ -67,31 +67,49 @@ def main() -> None:
     skipped = 0
     failed = 0
 
-    # for record in records:
-    #     year_dir = record["reporting_period"][:4]
-    #     destination_blob = (
-    #         f"{config.gcs_prefix.rstrip('/')}/{year_dir}/{record['filename']}"
-    #     )
-    #     try:
-    #         result = upload_blob_if_missing(
-    #             bucket_name=config.bucket_name,
-    #             blob_name=destination_blob,
-    #             source_url=record["url"],
-    #             session=session,
-    #             overwrite=config.overwrite,
-    #             timeout=config.request_timeout,
-    #         )
-    #         if result == "uploaded":
-    #             uploaded += 1
-    #         elif result == "skipped":
-    #             skipped += 1
-    #     except Exception as exc:
-    #         failed += 1
-    #         logging.exception("Failed to process %s: %s", record["url"], exc)
+    storage_client = storage.Client()
+    gcs_prefix = config.gcs_prefix.rstrip("/")
+    if gcs_prefix:
+        gcs_prefix = f"{gcs_prefix}/"
 
-    #     time.sleep(2)  # Be polite and avoid hammering the server
+    existing_blob_names = list_blob_names(
+        bucket_name=config.bucket_name,
+        prefix=gcs_prefix,
+        client=storage_client,
+    )
 
-    # logging.info("Ingest complete: uploaded=%d skipped=%d failed=%d", uploaded, skipped, failed)
+    for record in records:
+        year_dir = record["reporting_period"][:4]
+        destination_blob = f"{gcs_prefix}{year_dir}/{record['filename']}"
+
+        if not config.overwrite and destination_blob in existing_blob_names:
+            logging.info("Skipping existing blob: %s", destination_blob)
+            skipped += 1
+            continue
+
+        try:
+            result = upload_blob_if_missing(
+                bucket_name=config.bucket_name,
+                blob_name=destination_blob,
+                source_url=record["url"],
+                session=session,
+                overwrite=config.overwrite,
+                timeout=config.request_timeout,
+                client=storage_client,
+                skip_exists_check=not config.overwrite,
+            )
+            if result == "uploaded":
+                uploaded += 1
+                existing_blob_names.add(destination_blob)
+            elif result == "skipped":
+                skipped += 1
+        except Exception as exc:
+            failed += 1
+            logging.exception("Failed to process %s: %s", record["url"], exc)
+
+        time.sleep(2)  # Be polite and avoid hammering the server
+
+    logging.info("Ingest complete: uploaded=%d skipped=%d failed=%d", uploaded, skipped, failed)
 
     if records:
         bq_client = (
@@ -99,6 +117,7 @@ def main() -> None:
             if config.bigquery_project
             else bigquery.Client()
         )
+        # Ensure the BigQuery dataset exists before loading tables
         ensure_dataset(
             client=bq_client,
             dataset_id=config.bigquery_dataset,

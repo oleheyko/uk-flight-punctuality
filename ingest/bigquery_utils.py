@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Optional, Sequence
 
 from google.cloud import bigquery
 
@@ -12,7 +12,7 @@ def ensure_dataset(
     dataset_ref = bigquery.Dataset(client.dataset(dataset_id))
 
     try:
-        client.get_dataset(dataset_ref)
+        client.get_dataset(dataset_ref.reference)
         logging.info("BigQuery dataset already exists: %s", dataset_id)
         return
     except Exception:
@@ -33,10 +33,12 @@ def load_csvs_to_table(
     year: str,
     dataset_id: str,
     table_name: str,
+    schema_fields: Optional[Sequence[bigquery.SchemaField]] = None,
 ) -> bigquery.LoadJob:
-    normalized_prefix = gcs_prefix.strip("/")
-    if normalized_prefix:
-        source_uri = f"gs://{bucket_name}/{normalized_prefix}/{year}/*.csv"
+    # Clean the GCS prefix string for path construction only.
+    prefix = gcs_prefix.strip("/")
+    if prefix:
+        source_uri = f"gs://{bucket_name}/{prefix}/{year}/*.csv"
     else:
         source_uri = f"gs://{bucket_name}/{year}/*.csv"
 
