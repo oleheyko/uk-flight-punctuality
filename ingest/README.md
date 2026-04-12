@@ -27,7 +27,7 @@ This pipeline downloads monthly **Punctuality Statistics Full Analysis (CSV docu
 
 ## BigQuery behavior
 
-After raw files are uploaded to GCS, the pipeline loads yearly CSV data into BigQuery tables inside the configured dataset. For example, it creates or replaces tables named `punctuality_data_2000`, `punctuality_data_2001`, etc.
+After raw files are uploaded to GCS, the pipeline loads yearly CSV data into BigQuery tables inside the configured dataset. During ingest, the pipeline drops the original `run_date` column and adds `year` and `month` derived from the CSV `reporting_period` field. For example, it creates or replaces tables named `punctuality_data_2000`, `punctuality_data_2001`, etc.
 
 ## How to run locally
 
