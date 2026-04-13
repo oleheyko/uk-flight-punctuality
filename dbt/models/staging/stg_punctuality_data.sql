@@ -1,0 +1,31 @@
+-- {{ config(materialized='view') }}
+
+-- with source_table as (
+--     select *
+--     from `uk-flight-punctuality-492918.flight_data.punctuality_data_*`
+--     where _TABLE_SUFFIX between '2000' and '2025'
+-- )
+
+-- select
+--     reporting_period,
+--     reporting_airport,
+--     origin_destination_country,
+--     origin_destination,
+--     airline_name,
+--     scheduled_charter,
+--     number_flights_matched,
+--     actual_flights_unmatched,
+--     early_to_15_mins_late_percent,
+--     flts_16_to_30_mins_late_percent,
+--     flts_31_to_60_mins_late_percent,
+--     flts_61_to_180_mins_late_percent,
+--     flts_181_to_360_mins_late_percent,
+--     more_than_360_mins_late_percent,
+--     average_delay_mins,
+--     planned_flights_unmatched,
+--     previous_year_month_flights_matched,
+--     previous_year_month_early_to_15_mins_late_percent,
+--     previous_year_month_average_delay,
+--     year,
+--     month
+-- from source_table

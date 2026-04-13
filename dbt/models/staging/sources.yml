@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: source_data
+    database: uk-flight-punctuality-492918
+    schema: flight_data
+    description: "BigQuery dataset containing raw punctuality tables."
+    tables:
+      - name: punctuality_data_2000
+        description: "Raw BigQuery table imported from punctuality CSV data for year 2000."

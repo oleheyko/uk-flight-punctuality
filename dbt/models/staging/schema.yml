@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: stg_punctuality_data_2000
+    description: "Stage the punctuality dataset from BigQuery for downstream transformations from 2000 through 2025."
+    columns:
+      - name: reporting_period
+        description: "Reporting period identifier from the source dataset."
+      - name: reporting_airport
+        description: "Airport code for the reporting airport."
+      - name: origin_destination_country
+        description: "Origin or destination country associated with the route."
+      - name: origin_destination
+        description: "Origin and destination pair for the route."
+      - name: airline_name
+        description: "Carrier name for the flight record."
+      - name: scheduled_charter
+        description: "Charter status of the scheduled flight."
+      - name: number_flights_matched
+        description: "Number of matched flights in the reporting period."
+      - name: actual_flights_unmatched
+        description: "Count of actual flights that were unmatched."
+      - name: early_to_15_mins_late_percent
+        description: "Percent of flights early to 15 minutes late."
+      - name: flts_16_to_30_mins_late_percent
+        description: "Percent of flights 16 to 30 minutes late."
+      - name: flts_31_to_60_mins_late_percent
+        description: "Percent of flights 31 to 60 minutes late."
+      - name: flts_61_to_180_mins_late_percent
+        description: "Percent of flights 61 to 180 minutes late."
+      - name: flts_181_to_360_mins_late_percent
+        description: "Percent of flights 181 to 360 minutes late."
+      - name: more_than_360_mins_late_percent
+        description: "Percent of flights more than 360 minutes late."
+      - name: average_delay_mins
+        description: "Average delay in minutes for the reporting period."
+      - name: planned_flights_unmatched
+        description: "Count of planned flights that were unmatched."
+      - name: previous_year_month_flights_matched
+        description: "Matched flight count for the same month in the previous year."
+      - name: previous_year_month_early_to_15_mins_late_percent
+        description: "Percent early to 15 minutes late for the same month in the previous year."
+      - name: previous_year_month_average_delay
+        description: "Average delay for the same month in the previous year."
+      - name: year
+        description: "Year extracted from the reporting period."
+      - name: month
+        description: "Month extracted from the reporting period."

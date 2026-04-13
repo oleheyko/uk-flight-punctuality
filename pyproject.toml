@@ -3,13 +3,16 @@ name = "uk-flight-punctionality"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.14.3",
-    "google-cloud-storage>=3.10.1",
-    "google-cloud-bigquery>=3.10.1",
+    "google-cloud-storage",
+    "google-cloud-bigquery",
     "requests>=2.33.1",
     "pandas>=2.3.3",
     "pyarrow>=23.0.1",
     "pandas-gbq>=0.35.0",
+    "dbt",
+    "dbt-core",
+    "dbt-bigquery==1.11.1"
 ]
