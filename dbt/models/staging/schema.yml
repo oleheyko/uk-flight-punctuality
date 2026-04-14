@@ -1,11 +1,15 @@
 version: 2
 
 models:
-  - name: stg_punctuality_data_2000
+  - name: stg_punctuality_data
     description: "Stage the punctuality dataset from BigQuery for downstream transformations from 2000 through 2025."
     columns:
-      - name: reporting_period
-        description: "Reporting period identifier from the source dataset."
+      - name: year
+        description: "Year extracted from the reporting period."
+      - name: month
+        description: "Month extracted from the reporting period."
+      - name: reporting_period_date
+        description: "Canonical date representing the reporting month for partitioning."
       - name: reporting_airport
         description: "Airport code for the reporting airport."
       - name: origin_destination_country
@@ -36,13 +40,15 @@ models:
         description: "Average delay in minutes for the reporting period."
       - name: planned_flights_unmatched
         description: "Count of planned flights that were unmatched."
-      - name: previous_year_month_flights_matched
-        description: "Matched flight count for the same month in the previous year."
-      - name: previous_year_month_early_to_15_mins_late_percent
-        description: "Percent early to 15 minutes late for the same month in the previous year."
-      - name: previous_year_month_average_delay
-        description: "Average delay for the same month in the previous year."
-      - name: year
-        description: "Year extracted from the reporting period."
-      - name: month
-        description: "Month extracted from the reporting period."
+      - name: more_than_15_mins_early_percent
+        description: "Percent of flights more than 15 minutes early."
+      - name: "15_mins_early_to_1_minute_early_percent"
+        description: "Percent of flights between 15 minutes early and 1 minute early."
+      - name: "0_to_15_mins_late_percent"
+        description: "Percent of flights 0 to 15 minutes late."
+      - name: flights_unmatched_percent
+        description: "Percent of flights that were unmatched."
+      - name: flights_cancelled_percent
+        description: "Percent of flights that were cancelled."
+      - name: number_flights_cancelled
+        description: "Count of flights that were cancelled."

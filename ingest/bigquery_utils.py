@@ -72,6 +72,159 @@ def read_csv_with_fallback(content: bytes) -> pd.DataFrame:
     return pd.read_csv(io.BytesIO(content), encoding="latin-1", errors="replace")
 
 
+def normalize_punctuality_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    df = df.drop(columns=["reporting_period", "run_date"], errors="ignore")
+
+    previous_year_columns = [col for col in df.columns if col.startswith("previous_year_")]
+    df = df.drop(columns=previous_year_columns, errors="ignore")
+
+    # Rename columns to a standard format
+    rename_map = {
+        "flights_more_than_15_minutes_early_percent": "more_than_15_mins_early_percent",
+        "flights_15_minutes_early_to_1_minute_early_percent": "15_mins_early_to_1_minute_early_percent",
+        "flights_0_to_15_minutes_late_percent": "0_to_15_mins_late_percent",
+        "flts_16_to_30_mins_late_percent": "16_to_30_mins_late_percent",
+        "flts_31_to_60_mins_late_percent": "31_to_60_mins_late_percent",
+        "flts_61_to_180_mins_late_percent": "61_to_180_mins_late_percent",
+        "flts_181_to_360_mins_late_percent": "181_to_360_mins_late_percent",
+        "flights_between_16_and_30_minutes_late_percent": "16_to_30_mins_late_percent",
+        "flights_between_31_and_60_minutes_late_percent": "31_to_60_mins_late_percent",
+        "flights_between_61_and_120_minutes_late_percent": "61_to_120_mins_late_percent",
+        "flights_between_121_and_180_minutes_late_percent": "121_to_180_mins_late_percent",
+        "flights_between_181_and_360_minutes_late_percent": "181_to_360_mins_late_percent",
+        "flights_more_than_360_minutes_late_percent": "more_than_360_mins_late_percent"
+    }
+
+    for source, target in rename_map.items():
+        if source in df.columns:
+            if target in df.columns:
+                df[target] = df[target].fillna(df[source])
+                df = df.drop(columns=[source])
+            else:
+                df = df.rename(columns={source: target})
+
+    # Handle cases where 61_to_180_mins_late_percent is missing
+    mask = df["61_to_180_mins_late_percent"].isna()
+
+    # then do the operation only for those rows
+    df.loc[mask, "61_to_180_mins_late_percent"] = (
+        df.loc[mask, "61_to_120_mins_late_percent"]
+        + df.loc[mask, "121_to_180_mins_late_percent"]
+    )
+
+    # Handle cases where early_to_15_mins_late_percent is missing
+    mask = df["early_to_15_mins_late_percent"].isna()
+    df.loc[mask, "early_to_15_mins_late_percent"] = (
+        df.loc[mask, "15_mins_early_to_1_minute_early_percent"]
+        + df.loc[mask, "0_to_15_mins_late_percent"]
+        + df.loc[mask, "more_than_15_mins_early_percent"]  # or whatever source expression you need
+    )
+
+    intermediate_drop_columns = [
+        "more_than_15_minutes_early_percent",
+        "15_minutes_early_to_1_minute_early_percent",
+        "61_and_120_minutes_late_percent",
+        "121_and_180_minutes_late_percent",
+    ]
+    df = df.drop(columns=[col for col in intermediate_drop_columns if col in df.columns], errors="ignore")
+
+    final_columns = [
+        "reporting_airport",
+        "origin_destination_country",
+        "origin_destination",
+        "airline_name",
+        "scheduled_charter",
+        "year",
+        "month",
+        "number_flights_matched",
+        "actual_flights_unmatched",
+        "number_flights_cancelled",
+        "early_to_15_mins_late_percent",
+        "16_to_30_mins_late_percent",
+        "31_to_60_mins_late_percent",
+        "61_to_180_mins_late_percent",
+        "181_to_360_mins_late_percent",
+        "more_than_360_mins_late_percent",
+        "flights_unmatched_percent",
+        "flights_cancelled_percent",
+        "average_delay_mins",
+        "planned_flights_unmatched",
+    ]
+
+    ordered_columns = [col for col in final_columns if col in df.columns]
+    extra_columns = [col for col in df.columns if col not in ordered_columns]
+    return df[ordered_columns + extra_columns]
+
+
+def get_yearly_punctuality_table_names(
+    client: bigquery.Client,
+    dataset_id: str,
+    table_prefix: str,
+) -> list[str]:
+    dataset_ref = client.dataset(dataset_id)
+    table_names = [
+        table.table_id
+        for table in client.list_tables(dataset_ref)
+        if table.table_id.startswith(table_prefix)
+    ]
+    if not table_names:
+        raise ValueError(
+            f"No BigQuery tables found in dataset {dataset_id} with prefix {table_prefix}"
+        )
+    return sorted(table_names)
+
+
+def load_normalized_union_table(
+    client: bigquery.Client,
+    dataset_id: str,
+    table_prefix: str,
+    destination_table_name: str = "punctuality_data_all_years",
+    source_table_names: Optional[Sequence[str]] = None,
+) -> bigquery.LoadJob:
+    if source_table_names is None:
+        source_table_names = get_yearly_punctuality_table_names(
+            client=client,
+            dataset_id=dataset_id,
+            table_prefix=table_prefix,
+        )
+
+    raw_frames = []
+    for table_name in source_table_names:
+        logging.info("Reading BigQuery table %s.%s", dataset_id, table_name)
+        table_ref = client.dataset(dataset_id).table(table_name)
+        df = client.list_rows(table_ref).to_dataframe(create_bqstorage_client=False)
+        raw_frames.append(df)
+
+    if not raw_frames:
+        raise ValueError("No yearly tables were loaded for normalization")
+
+    unioned_raw = pd.concat(raw_frames, ignore_index=True, sort=False)
+    normalized = normalize_punctuality_dataframe(unioned_raw)
+
+    destination_ref = client.dataset(dataset_id).table(destination_table_name)
+    job_config = bigquery.LoadJobConfig(
+        write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
+        create_disposition=bigquery.CreateDisposition.CREATE_IF_NEEDED,
+    )
+
+    logging.info(
+        "Loading normalized unioned BigQuery table %s.%s (%s rows)",
+        dataset_id,
+        destination_table_name,
+        len(normalized),
+    )
+    job = client.load_table_from_dataframe(normalized, destination_ref, job_config=job_config)
+    job.result()
+    logging.info(
+        "Normalized BigQuery table loaded: %s.%s (%s rows)",
+        dataset_id,
+        destination_table_name,
+        job.output_rows,
+    )
+    return job
+
+
 def load_csvs_to_table(
     client: bigquery.Client,
     bucket_name: str,

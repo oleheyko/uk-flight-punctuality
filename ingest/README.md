@@ -44,6 +44,12 @@ Or use the helper script:
 ./run_local.sh
 ```
 
+To build the normalized unioned BigQuery table from the already-loaded yearly tables, run:
+
+```sh
+python main.py --normalize-all-years
+```
+
 ## Destination GCS path
 
 Files are uploaded to:

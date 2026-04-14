@@ -1,3 +1,4 @@
+import argparse
 import logging
 from urllib.parse import urljoin
 import time
@@ -8,7 +9,11 @@ from google.cloud import bigquery, storage
 from config import Config
 from scraper import fetch_page, parse_full_analysis_csv_links
 from storage import list_blob_names, upload_blob_if_missing
-from bigquery_utils import ensure_dataset, load_csvs_to_table
+from bigquery_utils import (
+    ensure_dataset,
+    load_csvs_to_table,
+    load_normalized_union_table,
+)
 
 
 def setup_logging() -> None:
@@ -19,9 +24,53 @@ def setup_logging() -> None:
     )
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="UK flight punctuality ingest pipeline"
+    )
+    parser.add_argument(
+        "--normalize-all-years",
+        action="store_true",
+        help=(
+            "Build the normalized unioned BigQuery table from already-loaded yearly tables "
+            "instead of downloading/uploading CSV files."
+        ),
+    )
+    return parser.parse_args()
+
+
 def main() -> None:
     setup_logging()
+    args = parse_args()
     config = Config.from_env()
+
+    if args.normalize_all_years:
+        logging.info(
+            "Building normalized unioned BigQuery table from existing yearly tables in %s",
+            config.bigquery_dataset,
+        )
+        bq_client = (
+            bigquery.Client(project=config.bigquery_project)
+            if config.bigquery_project
+            else bigquery.Client()
+        )
+        ensure_dataset(
+            client=bq_client,
+            dataset_id=config.bigquery_dataset,
+            location=config.bigquery_location,
+        )
+        try:
+            load_normalized_union_table(
+                client=bq_client,
+                dataset_id=config.bigquery_dataset,
+                table_prefix=config.bigquery_table_prefix,
+            )
+        except Exception as exc:
+            logging.exception(
+                "Failed to build normalized unioned BigQuery table: %s",
+                exc,
+            )
+        return
 
     logging.info(
         "Starting ingest for monthly punctuality full analysis CSV files from %s to %s",

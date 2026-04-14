@@ -6,5 +6,5 @@ sources:
     schema: flight_data
     description: "BigQuery dataset containing raw punctuality tables."
     tables:
-      - name: punctuality_data_2000
-        description: "Raw BigQuery table imported from punctuality CSV data for year 2000."
+      - name: punctuality_data_all_years
+        description: "Raw BigQuery table imported from punctuality CSV data for all years."
