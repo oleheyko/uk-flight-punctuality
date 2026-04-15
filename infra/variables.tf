@@ -22,30 +22,3 @@ variable "dataset_id" {
   description = "BigQuery dataset ID used for storing flight punctuality data."
   default     = "flight_data"
 }
-
-# variable "service_name" {
-#   description = "Cloud Run service name for the ingestion application."
-#   type        = string
-# }
-
-# variable "scheduler_job_name" {
-#   description = "Cloud Scheduler job name that triggers the Cloud Run service."
-#   type        = string
-# }
-
-# variable "scheduler_cron" {
-#   description = "Cron schedule expression for the scheduler job."
-#   type        = string
-#   default     = "0 6 * * *"
-# }
-
-# variable "scheduler_time_zone" {
-#   description = "Time zone used by Cloud Scheduler for the cron schedule."
-#   type        = string
-#   default     = "Europe/London"
-# }
-
-# variable "container_image" {
-#   description = "Placeholder container image for the Cloud Run ingestion service. Replace with your own image later."
-#   type        = string
-# }

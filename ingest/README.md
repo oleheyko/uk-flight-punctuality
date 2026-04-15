@@ -31,7 +31,7 @@ After raw files are uploaded to GCS, the pipeline loads yearly CSV data into Big
 
 ## How to run locally
 
-1. Create a local `.env` file using `.env.example` or export the variables in your shell.
+1. Create a local root `.env` file using `.env.example` or export the variables in your shell.
 2. From the `ingest/` directory run:
 
 ```sh
@@ -63,7 +63,7 @@ docker run --rm \
   uk-flight-ingest
 ```
 
-If you already have a local `.env` file, you can pass it with `--env-file .env`, but the Google service account key must still be mounted into the container and referenced by `GOOGLE_APPLICATION_CREDENTIALS`.
+If you already have a local `.env` file at the project root, you can pass it with `--env-file ../.env` from the `ingest/` directory, but the Google service account key must still be mounted into the container and referenced by `GOOGLE_APPLICATION_CREDENTIALS`.
 
 ### Running with Docker Compose
 
@@ -73,7 +73,7 @@ Create or place your service account key at `ingest/gcloud-key.json`, then run f
 docker compose up --build
 ```
 
-The compose service uses `env_file: .env` and sets `GOOGLE_APPLICATION_CREDENTIALS=/creds/gcloud-key.json`.
+The compose service uses `env_file: ../.env` and sets `GOOGLE_APPLICATION_CREDENTIALS=/creds/gcloud-key.json`.
 
 If you prefer to use a different path for the key file, update `docker-compose.yml` or pass a custom bind mount instead.
 

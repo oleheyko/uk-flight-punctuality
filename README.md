@@ -4,7 +4,7 @@ A UK flight punctuality ingestion project that downloads CAA monthly CSV files, 
 
 ## Root setup helper
 
-Use `set_up.py` to create a local `ingest/.env` file, build the ingestion Docker image from `ingest/Dockerfile`, and push it to Google Artifact Registry.
+Use `set_up.py` to create a local root `.env` file, build the ingestion Docker image from `ingest/Dockerfile`, and push it to Google Artifact Registry.
 
 ```bash
 python set_up.py --project YOUR_PROJECT_ID --repo YOUR_ARTIFACT_REGISTRY_REPO
@@ -30,7 +30,20 @@ After the image is pushed:
 
 1. Build and push the container image with `set_up.py`.
 2. Provision GCP resources with Terraform in `infra/`.
-3. Verify the Cloud Run service and then use the Cloud Scheduler job for monthly execution.
+3. Verify the Cloud Run job and then let GitHub Actions invoke it on schedule.
+
+## GitHub scheduled runs
+
+A scheduled workflow has been added at `.github/workflows/scheduled-gcp-run.yml`.
+It runs on a cron schedule and can also be triggered manually from the GitHub UI.
+
+Configure the following repository secrets:
+- `GCP_PROJECT`
+- `GCP_REGION`
+- `GCP_JOB_NAME`
+- `GCP_SA_KEY`
+
+`GCP_SA_KEY` should contain the JSON key for a service account with permissions to execute Cloud Run jobs.
 
 ## Notes
 

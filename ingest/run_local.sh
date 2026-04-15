@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 set -eu
 
-if [ -f .env ]; then
-  # Load environment variables from .env for local execution.
+if [ -f ../.env ]; then
+  # Load environment variables from project root .env for local execution.
   # shellcheck disable=SC1091
-  . .env
+  . ../.env
 fi
 
 python main.py

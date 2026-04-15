@@ -11,7 +11,7 @@ from typing import Dict
 
 ROOT = Path(__file__).resolve().parent
 INGEST_DIR = ROOT / "ingest"
-ENV_FILE = INGEST_DIR / ".env"
+ENV_FILE = ROOT / ".env"
 
 DEFAULT_ENV: Dict[str, str] = {
     "BUCKET_NAME": "uk-flight-punctuality-raw-data-lake",

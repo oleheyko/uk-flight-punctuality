@@ -5,9 +5,9 @@ This directory provisions a simple GCP baseline for a data engineering portfolio
 It creates:
 - one Cloud Storage bucket for raw UK flight punctuality data
 - one BigQuery dataset for analytics
-- one Cloud Run service for the ingestion app
-- one Cloud Scheduler job to invoke Cloud Run on a schedule
-- one service account to authenticate Scheduler to Cloud Run
+- one Cloud Run job for the ingestion app
+- one service account to run the ingestion job
+- one one-time invocation of the Cloud Run job on apply
 
 ## Usage
 
@@ -23,5 +23,7 @@ terraform apply
 
 ## Notes
 
-- Replace `container_image` with your own Cloud Run image once the ingestion app is ready.
-- The scheduler job sends a POST request with a small JSON body to Cloud Run using OIDC authentication.
+- Replace `container_image` with your own Artifact Registry image once the ingestion app is ready.
+- This setup now uses a Cloud Run job instead of a Cloud Run service.
+- GitHub Actions executes the existing Cloud Run job on a schedule using `.github/workflows/scheduled-gcp-run.yml`.
+- Terraform also triggers the Cloud Run job once during apply if the `gcloud` CLI is available.

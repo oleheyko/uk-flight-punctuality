@@ -1,0 +1,65 @@
+name: Scheduled GCP ingest run
+
+on:
+  schedule:
+    - cron: '0 6 1 * *' # 06:00 UTC on the 1st day of every month
+  workflow_dispatch:
+
+env:
+  GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+  GCP_REGION: ${{ secrets.GCP_REGION }}
+  ARTIFACT_REGISTRY_REPO: uk-flight-punctuality
+  CONTAINER_IMAGE: uk-flight-ingest
+  JOB_NAME: uk-flight-ingest-job
+  BUCKET_NAME: uk-flight-punctuality-raw-data-lake
+  GCS_PREFIX: raw/
+  OVERWRITE: false
+  REQUEST_TIMEOUT: 60
+  BIGQUERY_DATASET: flight_data
+  BIGQUERY_TABLE_PREFIX: punctuality_data_
+  CAA_BASE_URL: https://www.caa.co.uk/data-and-analysis/uk-aviation-market/flight-punctuality/uk-flight-punctuality-statistics/
+
+jobs:
+  trigger_ingest_job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker auth for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev --quiet
+
+      - name: Create or update Cloud Run Job
+        run: |
+          JOB_NAME="monthly-ingest-$(date +%Y%m)"
+          IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REGISTRY_REPO}/${CONTAINER_IMAGE}:latest"
+          if gcloud run jobs describe "$JOB_NAME" --region="$GCP_REGION" >/dev/null 2>&1; then
+            gcloud run jobs update "$JOB_NAME" \
+              --image "$IMAGE" \
+              --region "$GCP_REGION" \
+              --task-timeout 3600 \
+              --max-retries 0 \
+              --set-env-vars BUCKET_NAME="$BUCKET_NAME",GCS_PREFIX="$GCS_PREFIX",OVERWRITE="$OVERWRITE",REQUEST_TIMEOUT="$REQUEST_TIMEOUT",BIGQUERY_DATASET="$BIGQUERY_DATASET",BIGQUERY_TABLE_PREFIX="$BIGQUERY_TABLE_PREFIX",CAA_BASE_URL="$CAA_BASE_URL"
+          else
+            gcloud run jobs create "$JOB_NAME" \
+              --image "$IMAGE" \
+              --region "$GCP_REGION" \
+              --task-timeout 3600 \
+              --max-retries 0 \
+              --set-env-vars BUCKET_NAME="$BUCKET_NAME",GCS_PREFIX="$GCS_PREFIX",OVERWRITE="$OVERWRITE",REQUEST_TIMEOUT="$REQUEST_TIMEOUT",BIGQUERY_DATASET="$BIGQUERY_DATASET",BIGQUERY_TABLE_PREFIX="$BIGQUERY_TABLE_PREFIX",CAA_BASE_URL="$CAA_BASE_URL"
+          fi
+
+      - name: Execute Cloud Run Job
+        run: |
+          JOB_NAME="monthly-ingest-$(date +%Y%m)"
+          gcloud run jobs execute "$JOB_NAME" --region="$GCP_REGION"
