@@ -3,6 +3,7 @@ import logging
 from typing import Optional, Sequence
 
 import pandas as pd
+from google.api_core.exceptions import NotFound
 from google.cloud import bigquery, storage
 
 
@@ -121,14 +122,6 @@ def normalize_punctuality_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         + df.loc[mask, "more_than_15_mins_early_percent"]  # or whatever source expression you need
     )
 
-    intermediate_drop_columns = [
-        "more_than_15_minutes_early_percent",
-        "15_minutes_early_to_1_minute_early_percent",
-        "61_and_120_minutes_late_percent",
-        "121_and_180_minutes_late_percent",
-    ]
-    df = df.drop(columns=[col for col in intermediate_drop_columns if col in df.columns], errors="ignore")
-
     final_columns = [
         "reporting_airport",
         "origin_destination_country",
@@ -139,22 +132,27 @@ def normalize_punctuality_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "month",
         "number_flights_matched",
         "actual_flights_unmatched",
-        "number_flights_cancelled",
+        "more_than_15_mins_early_percent",
+        "15_mins_early_to_1_minute_early_percent",
+        "0_to_15_mins_late_percent",
         "early_to_15_mins_late_percent",
         "16_to_30_mins_late_percent",
         "31_to_60_mins_late_percent",
+        "61_and_120_mins_late_percent",
+        "121_and_180_mins_late_percent",
         "61_to_180_mins_late_percent",
         "181_to_360_mins_late_percent",
         "more_than_360_mins_late_percent",
         "flights_unmatched_percent",
         "flights_cancelled_percent",
+        "number_flights_cancelled",
         "average_delay_mins",
         "planned_flights_unmatched",
     ]
 
     ordered_columns = [col for col in final_columns if col in df.columns]
-    extra_columns = [col for col in df.columns if col not in ordered_columns]
-    return df[ordered_columns + extra_columns]
+    # extra_columns = [col for col in df.columns if col not in ordered_columns]
+    return df[ordered_columns]
 
 
 def get_yearly_punctuality_table_names(
@@ -234,8 +232,22 @@ def load_csvs_to_table(
     table_name: str,
     schema_fields: Optional[Sequence[bigquery.SchemaField]] = None,
     storage_client: Optional[storage.Client] = None,
-) -> bigquery.LoadJob:
+    skip_if_table_exists: bool = False,
+) -> Optional[bigquery.LoadJob]:
     storage_client = storage_client or storage.Client()
+
+    table_ref = client.dataset(dataset_id).table(table_name)
+    if skip_if_table_exists:
+        try:
+            client.get_table(table_ref)
+            logging.info(
+                "Skipping BigQuery load because table already exists: %s.%s",
+                dataset_id,
+                table_name,
+            )
+            return None
+        except NotFound:
+            pass
 
     prefix = gcs_prefix.strip("/")
     if prefix:

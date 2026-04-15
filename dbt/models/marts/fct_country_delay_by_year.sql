@@ -3,7 +3,6 @@
 
 select
     origin_destination_country,
-    year,
     sum(number_flights_matched) as total_flights_matched,
     round(sum(number_flights_matched * average_delay_mins) / nullif(sum(number_flights_matched), 0), 0) as avg_delay_mins,
     round(avg(`0_to_15_mins_late_percent`), 2) as avg_0_to_15_mins_late_percent

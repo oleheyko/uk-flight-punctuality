@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 
 def extract_reporting_period(text: str) -> str:
@@ -9,7 +10,8 @@ def extract_reporting_period(text: str) -> str:
     period = match.group(1)
     year = int(period[:4])
     month = int(period[4:])
-    if 2000 <= year <= 2025 and 1 <= month <= 12:
+    current_year = datetime.now().year
+    if 2000 <= year <= current_year and 1 <= month <= 12:
         return period
     return ""
 

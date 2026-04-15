@@ -1,5 +1,7 @@
 import argparse
 import logging
+import os
+from pathlib import Path
 from urllib.parse import urljoin
 import time
 
@@ -14,6 +16,24 @@ from bigquery_utils import (
     load_csvs_to_table,
     load_normalized_union_table,
 )
+
+
+def load_dotenv_file(env_path: Path) -> None:
+    if not env_path.exists():
+        return
+
+    for line in env_path.read_text().splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if "=" not in stripped:
+            continue
+
+        key, value = stripped.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
 
 
 def setup_logging() -> None:
@@ -42,6 +62,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     setup_logging()
     args = parse_args()
+    load_dotenv_file(Path(__file__).resolve().parent / ".env")
     config = Config.from_env()
 
     if args.normalize_all_years:
@@ -184,6 +205,7 @@ def main() -> None:
                     year=year,
                     dataset_id=config.bigquery_dataset,
                     table_name=table_name,
+                    skip_if_table_exists=not config.overwrite,
                 )
             except Exception as exc:
                 logging.exception("Failed to load BigQuery table for year %s: %s", year, exc)

@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 
 def parse_bool(value: str, default: bool = False) -> bool:
@@ -36,31 +37,15 @@ class Config:
 
     @classmethod
     def from_env(cls) -> "Config":
-        bucket_name = "uk-flight-punctuality-raw-data-lake"
-        # bucket_name = os.getenv("BUCKET_NAME", "").strip()
-        # if not bucket_name:
-        #     raise ValueError("BUCKET_NAME is required")
+        # bucket_name = "uk-flight-punctuality-raw-data-lake"
+        bucket_name = os.getenv("BUCKET_NAME", "").strip()
+        if not bucket_name:
+            raise ValueError("BUCKET_NAME is required")
 
-        caa_base_url = os.getenv("CAA_BASE_URL", "").strip()
-        caa_2025_url = os.getenv(
-            "CAA_2025_URL",
-            (
-                "https://www.caa.co.uk/data-and-analysis/uk-aviation-market/"
-                "flight-punctuality/uk-flight-punctuality-statistics/2025/"
-            ),
-        ).strip()
-
-        if not caa_base_url:
-            if caa_2025_url.endswith("/2025/"):
-                caa_base_url = caa_2025_url[: -len("2025/")]
-            else:
-                caa_base_url = (
-                    "https://www.caa.co.uk/data-and-analysis/uk-aviation-market/"
-                    "flight-punctuality/uk-flight-punctuality-statistics/"
-                )
+        caa_base_url = os.getenv("CAA_BASE_URL", "https://www.caa.co.uk/data-and-analysis/uk-aviation-market/flight-punctuality/uk-flight-punctuality-statistics/")
 
         start_year = int(os.getenv("CAA_YEAR_START", "2000"))
-        end_year = int(os.getenv("CAA_YEAR_END", "2025"))
+        end_year = int(os.getenv("CAA_YEAR_END", datetime.now().year))
         if start_year < 2000 or end_year < start_year:
             raise ValueError("CAA_YEAR_START must be >= 2000 and CAA_YEAR_END must be >= CAA_YEAR_START")
 
