@@ -44,6 +44,39 @@ Or use the helper script:
 ./run_local.sh
 ```
 
+### Running in Docker
+
+Build the container from the `ingest/` directory:
+
+```sh
+docker build -t uk-flight-ingest .
+```
+
+Run the container with environment variables and a mounted Google credentials file:
+
+```sh
+docker run --rm \
+  -e BUCKET_NAME=your-bucket-name \
+  -e CAA_BASE_URL=https://www.caa.co.uk/... \
+  -e GOOGLE_APPLICATION_CREDENTIALS=/creds/gcloud-key.json \
+  -v /local/path/to/gcloud-key.json:/creds/gcloud-key.json:ro \
+  uk-flight-ingest
+```
+
+If you already have a local `.env` file, you can pass it with `--env-file .env`, but the Google service account key must still be mounted into the container and referenced by `GOOGLE_APPLICATION_CREDENTIALS`.
+
+### Running with Docker Compose
+
+Create or place your service account key at `ingest/gcloud-key.json`, then run from the `ingest/` directory:
+
+```sh
+docker compose up --build
+```
+
+The compose service uses `env_file: .env` and sets `GOOGLE_APPLICATION_CREDENTIALS=/creds/gcloud-key.json`.
+
+If you prefer to use a different path for the key file, update `docker-compose.yml` or pass a custom bind mount instead.
+
 To build the normalized unioned BigQuery table from the already-loaded yearly tables, run:
 
 ```sh

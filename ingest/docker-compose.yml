@@ -1,0 +1,14 @@
+version: "3.9"
+
+services:
+  ingest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/creds/gcloud-key.json
+    volumes:
+      - ./gcloud-key.json:/creds/gcloud-key.json:ro
+    command: python main.py
