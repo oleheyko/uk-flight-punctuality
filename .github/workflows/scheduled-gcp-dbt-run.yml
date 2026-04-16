@@ -1,0 +1,60 @@
+name: Scheduled GCP dbt run
+
+on:
+  schedule:
+    - cron: '0 7 1 * *' # 07:00 UTC on the 1st day of every month
+  workflow_dispatch:
+
+env:
+  GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+  GCP_REGION: ${{ secrets.GCP_REGION }}
+  ARTIFACT_REGISTRY_REPO: uk-flight-punctuality
+  CONTAINER_IMAGE: uk-flight-dbt
+  IMAGE_TAG: latest
+  JOB_NAME: monthly-dbt-run
+  DBT_COMMAND: run
+
+jobs:
+  trigger_dbt_job:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker auth for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev --quiet
+
+      - name: Create or update Cloud Run dbt job
+        run: |
+          JOB_NAME="${JOB_NAME}-$(date +%Y%m)"
+          IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REGISTRY_REPO}/${CONTAINER_IMAGE}:${IMAGE_TAG}"
+          if gcloud run jobs describe "$JOB_NAME" --region="$GCP_REGION" >/dev/null 2>&1; then
+            gcloud run jobs update "$JOB_NAME" \
+              --image "$IMAGE" \
+              --region "$GCP_REGION" \
+              --task-timeout 3600 \
+              --max-retries 0 \
+              --args "$DBT_COMMAND"
+          else
+            gcloud run jobs create "$JOB_NAME" \
+              --image "$IMAGE" \
+              --region "$GCP_REGION" \
+              --task-timeout 3600 \
+              --max-retries 0 \
+              --args "$DBT_COMMAND"
+          fi
+
+      - name: Execute Cloud Run dbt job
+        run: |
+          JOB_NAME="${JOB_NAME}-$(date +%Y%m)"
+          gcloud run jobs execute "$JOB_NAME" --region="$GCP_REGION"

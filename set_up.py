@@ -11,6 +11,7 @@ from typing import Dict
 
 ROOT = Path(__file__).resolve().parent
 INGEST_DIR = ROOT / "ingest"
+DBT_DIR = ROOT / "dbt"
 ENV_FILE = ROOT / ".env"
 
 DEFAULT_ENV: Dict[str, str] = {
@@ -68,9 +69,9 @@ def gcloud_auth_docker(region: str) -> None:
     )
 
 
-def build_and_push(image: str) -> None:
-    run(["docker", "build", "-t", image, "."], cwd=INGEST_DIR)
-    run(["docker", "push", image], cwd=INGEST_DIR)
+def build_and_push(image: str, build_dir: Path) -> None:
+    run(["docker", "build", "-t", image, "."], cwd=build_dir)
+    run(["docker", "push", image], cwd=build_dir)
 
 
 def artifact_repo_exists(project: str, region: str, repo: str) -> bool:
@@ -124,15 +125,20 @@ def ensure_artifact_repository(project: str, region: str, repo: str) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build and push the ingest Docker image to GCP")
+    parser = argparse.ArgumentParser(description="Build and push ingest and dbt Docker images to GCP Artifact Registry")
     parser.add_argument("--project", help="GCP project ID")
     parser.add_argument("--region", default="europe-west2", help="GCP region / Artifact Registry location")
     parser.add_argument("--repo", default="uk-flight-punctuality", help="Artifact Registry repository name")
-    parser.add_argument("--image-name", default="uk-flight-ingest", help="Docker image name")
+    parser.add_argument("--image-name", default=None, help="Ingest Docker image name")
+    parser.add_argument("--dbt-image-name", default=None, help="dbt Docker image name")
     parser.add_argument("--tag", default="latest", help="Docker image tag")
     parser.add_argument(
         "--image",
-        help="Full container image URI. If provided, project/region/repo/image-name/tag are ignored.",
+        help="Full ingest container image URI. If provided, project/region/repo/image-name/tag are ignored.",
+    )
+    parser.add_argument(
+        "--dbt-image",
+        help="Full dbt container image URI.",
     )
     return parser.parse_args()
 
@@ -145,20 +151,25 @@ def main() -> None:
         print("Error: GCP project ID is required. Provide --project or set GCP_PROJECT.")
         sys.exit(1)
 
-    if args.image:
-        image = args.image
-    else:
-        image = f"{args.region}-docker.pkg.dev/{project}/{args.repo}/{args.image_name}:{args.tag}"
+    ingest_image_name = args.image_name or "uk-flight-ingest"
+    ingest_image = args.image or f"{args.region}-docker.pkg.dev/{project}/{args.repo}/{ingest_image_name}:{args.tag}"
+
+    dbt_image_name = args.dbt_image_name or "uk-flight-dbt"
+    dbt_image = args.dbt_image or f"{args.region}-docker.pkg.dev/{project}/{args.repo}/{dbt_image_name}:{args.tag}"
 
     check_program("docker")
 
     write_env_file()
     ensure_artifact_repository(project, args.region, args.repo)
     gcloud_auth_docker(args.region)
-    build_and_push(image)
+
+    build_and_push(ingest_image, INGEST_DIR)
+    build_and_push(dbt_image, DBT_DIR)
 
     print("\nSuccess")
-    print(f"Docker image pushed to: {image}")
+    print("Docker images pushed to:")
+    print(f"  ingest: {ingest_image}")
+    print(f"  dbt:    {dbt_image}")
 
 
 if __name__ == "__main__":

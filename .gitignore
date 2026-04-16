@@ -53,3 +53,5 @@ logs/
 # python
 *.pyc
 ingest/__pycache__/
+
+__pycache__/

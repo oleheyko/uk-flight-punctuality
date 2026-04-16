@@ -4,7 +4,7 @@ A UK flight punctuality ingestion project that downloads CAA monthly CSV files, 
 
 ## Root setup helper
 
-Use `set_up.py` to create a local root `.env` file, build the ingestion Docker image from `ingest/Dockerfile`, and push it to Google Artifact Registry.
+Use `set_up.py` to create a local root `.env` file, build the ingestion and dbt Docker images from `ingest/Dockerfile` and `dbt/Dockerfile`, and push them to Google Artifact Registry.
 
 ```bash
 python set_up.py --project YOUR_PROJECT_ID --repo YOUR_ARTIFACT_REGISTRY_REPO

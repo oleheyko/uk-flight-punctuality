@@ -39,7 +39,7 @@ jobs:
         run: |
           gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev --quiet
 
-      - name: Create or update Cloud Run Job
+      - name: Create or update Cloud Run Ingestion Job
         run: |
           JOB_NAME="monthly-ingest-$(date +%Y%m)"
           IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REGISTRY_REPO}/${CONTAINER_IMAGE}:latest"
@@ -59,7 +59,7 @@ jobs:
               --set-env-vars BUCKET_NAME="$BUCKET_NAME",GCS_PREFIX="$GCS_PREFIX",OVERWRITE="$OVERWRITE",REQUEST_TIMEOUT="$REQUEST_TIMEOUT",BIGQUERY_DATASET="$BIGQUERY_DATASET",BIGQUERY_TABLE_PREFIX="$BIGQUERY_TABLE_PREFIX",CAA_BASE_URL="$CAA_BASE_URL"
           fi
 
-      - name: Execute Cloud Run Job
+      - name: Execute Cloud Run Ingestion Job
         run: |
           JOB_NAME="monthly-ingest-$(date +%Y%m)"
           gcloud run jobs execute "$JOB_NAME" --region="$GCP_REGION"
