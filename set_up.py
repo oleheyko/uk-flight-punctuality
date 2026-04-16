@@ -159,7 +159,6 @@ def main() -> None:
 
     print("\nSuccess")
     print(f"Docker image pushed to: {image}")
-    print("Next: update infra/terraform.tfvars container_image to this image and run terraform apply in infra/.")
 
 
 if __name__ == "__main__":

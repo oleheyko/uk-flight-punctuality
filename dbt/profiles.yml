@@ -1,0 +1,14 @@
+uk_flight_punctuality:              # your profile name (same as in dbt_project.yml)
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account                # or "oauth" if you want user‑based auth
+      project: uk-flight-punctuality-492918  # your Google Cloud project ID
+      dataset: flight_data                   # BigQuery dataset for dev
+      threads: 1                             # number of parallel queries
+      timeout_seconds: 300                   # query timeout in seconds
+      location: europe-west2                 # BigQuery location (e.g. US, EU, us‑west2)
+      priority: interactive                  # or "batch"
+      keyfile: /tmp/credentials.json          # full path to service account key
+      retries: 1

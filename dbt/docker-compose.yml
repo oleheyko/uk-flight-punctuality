@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  dbt:
+    build: .
+    working_dir: /usr/app
+    volumes:
+      - .:/usr/app:delegated
+      - ../keys/my-creds.json:/tmp/credentials.json:ro
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/tmp/credentials.json
+    entrypoint: ["dbt"]
+    command: ["--help"]
