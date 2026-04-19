@@ -12,7 +12,9 @@ from typing import Dict
 ROOT = Path(__file__).resolve().parent
 INGEST_DIR = ROOT / "ingest"
 DBT_DIR = ROOT / "dbt"
+DASHBOARD_DIR = ROOT / "dashboard"
 ENV_FILE = ROOT / ".env"
+
 
 DEFAULT_ENV: Dict[str, str] = {
     "BUCKET_NAME": "uk-flight-punctuality-raw-data-lake",
@@ -131,6 +133,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--repo", default="uk-flight-punctuality", help="Artifact Registry repository name")
     parser.add_argument("--image-name", default=None, help="Ingest Docker image name")
     parser.add_argument("--dbt-image-name", default=None, help="dbt Docker image name")
+    parser.add_argument("--dashboard-image-name", default=None, help="Streamlit dashboard Docker image name")
     parser.add_argument("--tag", default="latest", help="Docker image tag")
     parser.add_argument(
         "--image",
@@ -152,10 +155,13 @@ def main() -> None:
         sys.exit(1)
 
     ingest_image_name = args.image_name or "uk-flight-ingest"
-    ingest_image = args.image or f"{args.region}-docker.pkg.dev/{project}/{args.repo}/{ingest_image_name}:{args.tag}"
+    ingest_image = f"{args.region}-docker.pkg.dev/{project}/{args.repo}/{ingest_image_name}:{args.tag}"
 
     dbt_image_name = args.dbt_image_name or "uk-flight-dbt"
-    dbt_image = args.dbt_image or f"{args.region}-docker.pkg.dev/{project}/{args.repo}/{dbt_image_name}:{args.tag}"
+    dbt_image = f"{args.region}-docker.pkg.dev/{project}/{args.repo}/{dbt_image_name}:{args.tag}"
+
+    dashboard_image_name = args.dashboard_image_name or "uk-flight-dashboard"
+    dashboard_image = f"{args.region}-docker.pkg.dev/{project}/{args.repo}/{dashboard_image_name}:{args.tag}"
 
     check_program("docker")
 
@@ -165,11 +171,13 @@ def main() -> None:
 
     build_and_push(ingest_image, INGEST_DIR)
     build_and_push(dbt_image, DBT_DIR)
+    build_and_push(dashboard_image, DASHBOARD_DIR)
 
     print("\nSuccess")
     print("Docker images pushed to:")
     print(f"  ingest: {ingest_image}")
     print(f"  dbt:    {dbt_image}")
+    print(f"  dashboard:    {dashboard_image}")
 
 
 if __name__ == "__main__":

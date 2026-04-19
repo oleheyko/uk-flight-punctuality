@@ -1,0 +1,52 @@
+name: GCP Dashboard Run
+
+on:
+  workflow_dispatch:
+
+env:
+  GCP_PROJECT: ${{ secrets.GCP_PROJECT }}
+  GCP_REGION: ${{ secrets.GCP_REGION }}
+  ARTIFACT_REGISTRY_REPO: uk-flight-punctuality
+  CONTAINER_IMAGE: uk-flight-dashboard
+  IMAGE_TAG: latest
+  SERVICE_NAME: uk-flight-dashboard
+
+jobs:
+  deploy_dashboard:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker auth for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev --quiet
+
+      - name: Build and push Docker image
+        run: |
+          IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REGISTRY_REPO}/${CONTAINER_IMAGE}:${IMAGE_TAG}"
+          docker build -t $IMAGE ./dashboard
+          docker push $IMAGE
+
+      - name: Deploy to Cloud Run
+        run: |
+          IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REGISTRY_REPO}/${CONTAINER_IMAGE}:${IMAGE_TAG}"
+          gcloud run deploy $SERVICE_NAME \
+            --image $IMAGE \
+            --region $GCP_REGION \
+            --platform managed \
+            --allow-unauthenticated \
+            --cpu 1 \
+            --memory 512Mi \
+            --min-instances 0 \
+            --max-instances 1 \
+            --port 8501
