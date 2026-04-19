@@ -1,0 +1,5 @@
+plotly>=5.18.0
+pandas>=2.3.3
+streamlit>=1.18.0
+google-cloud-bigquery>=3.0.0
+db-dtypes

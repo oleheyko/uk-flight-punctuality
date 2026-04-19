@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8501:8501"
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/secrets/gcp-key.json
+    volumes:
+      - ../keys/my-creds.json:/secrets/gcp-key.json:ro
+      - ../.streamlit:/app/.streamlit:ro
+    restart: unless-stopped
