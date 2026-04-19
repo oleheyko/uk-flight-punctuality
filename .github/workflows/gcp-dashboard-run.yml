@@ -1,4 +1,4 @@
-name: GCP Dashboard Run
+name: GCP dashboard Run
 
 on:
   workflow_dispatch:
@@ -30,12 +30,6 @@ jobs:
       - name: Configure Docker auth for Artifact Registry
         run: |
           gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev --quiet
-
-      - name: Build and push Docker image
-        run: |
-          IMAGE="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT}/${ARTIFACT_REGISTRY_REPO}/${CONTAINER_IMAGE}:${IMAGE_TAG}"
-          docker build -t $IMAGE ./dashboard
-          docker push $IMAGE
 
       - name: Deploy to Cloud Run
         run: |
