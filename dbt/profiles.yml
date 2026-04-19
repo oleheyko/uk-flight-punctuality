@@ -1,13 +1,13 @@
-uk_flight_punctuality:              # your profile name (same as in dbt_project.yml)
+uk_flight_punctuality:
   target: dev
   outputs:
     dev:
       type: bigquery
-      method: oauth                        # use Application Default Credentials on GCP
-      project: uk-flight-punctuality-492918  # your Google Cloud project ID
-      dataset: flight_data                   # BigQuery dataset for dev
-      threads: 1                             # number of parallel queries
-      timeout_seconds: 300                   # query timeout in seconds
-      location: europe-west2                 # BigQuery location (e.g. US, EU, us‑west2)
-      priority: interactive                  # or "batch"
+      method: oauth
+      project: uk-flight-punctuality-492918
+      dataset: flight_data
+      threads: 1
+      timeout_seconds: 300
+      location: europe-west2
+      priority: interactive
       retries: 1

@@ -8,6 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 from typing import Dict
+import yaml
 
 ROOT = Path(__file__).resolve().parent
 INGEST_DIR = ROOT / "ingest"
@@ -146,6 +147,69 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def create_streamlit_secrets_file() -> None:
+    secrets_dir = ROOT / ".streamlit"
+    secrets_dir.mkdir(exist_ok=True)
+    secrets_file = secrets_dir / "secrets.toml"
+    if secrets_file.exists():
+        print(f"Found existing {secrets_file}. Leaving it unchanged.")
+        return
+
+    bigquery_project = os.getenv("BIGQUERY_PROJECT", "")
+    if not bigquery_project:
+        raise ValueError("BIGQUERY_PROJECT environment variable is required to create Streamlit secrets file.")
+    bigquery_dataset = os.getenv("BIGQUERY_DATASET", "flight_data")
+    if not bigquery_dataset:
+        raise ValueError("BIGQUERY_DATASET environment variable is required to create Streamlit secrets file.")
+
+    secrets_content = f"""[bigquery]\nproject_id = "{bigquery_project}"\ndataset = "{bigquery_dataset}"\n"""
+
+    with open(secrets_file, "w") as f:
+        f.write(secrets_content)
+    print(f"Created Streamlit secrets file at {secrets_file} with BigQuery project and dataset.")
+
+    return
+
+
+def create_dbt_profiles_yml_file(args: argparse.Namespace) -> None:
+    profiles_dir = ROOT / "dbt"
+    profiles_file = profiles_dir / "profiles.yml"
+    if profiles_file.exists():
+        print(f"Found existing {profiles_file}. Leaving it unchanged.")
+        return
+
+    bigquery_project = os.getenv("BIGQUERY_PROJECT", "")
+    if not bigquery_project:
+        raise ValueError("BIGQUERY_PROJECT environment variable is required to create dbt profiles.yml file.")
+    bigquery_dataset = os.getenv("BIGQUERY_DATASET", "flight_data")
+    if not bigquery_dataset:
+        raise ValueError("BIGQUERY_DATASET environment variable is required to create dbt profiles.yml file.")
+
+    profile_config = {
+        "uk_flight_punctuality": {
+            "target": "dev",
+            "outputs": {
+                "dev": {
+                    "type": "bigquery",
+                    "method": "oauth",
+                    "project": args.project,
+                    "dataset": "flight_data",
+                    "threads": 1,
+                    "timeout_seconds": 300,
+                    "location": "europe-west2",
+                    "priority": "interactive",
+                    "retries": 1
+                }
+            }
+        }
+    }
+
+    with open(profiles_file, "w") as f:
+        yaml.dump(profile_config, f, default_flow_style=False, sort_keys=False)
+
+    print(f"Created dbt profiles.yml file at {profiles_file} with BigQuery project and dataset.")
+
+
 def main() -> None:
     args = parse_args()
 
@@ -166,6 +230,8 @@ def main() -> None:
     check_program("docker")
 
     write_env_file()
+    create_streamlit_secrets_file()
+    create_dbt_profiles_yml_file(args)
     ensure_artifact_repository(project, args.region, args.repo)
     gcloud_auth_docker(args.region)
 

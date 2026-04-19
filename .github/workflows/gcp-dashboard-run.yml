@@ -1,4 +1,4 @@
-name: GCP dashboard Run
+name: GCP dashboard run
 
 on:
   workflow_dispatch:

@@ -10,5 +10,5 @@ services:
     environment:
       - GOOGLE_APPLICATION_CREDENTIALS=/creds/gcloud-key.json
     volumes:
-      - ./gcloud-key.json:/creds/gcloud-key.json:ro
+      - ../keys/my-creds.json:/creds/gcloud-key.json:ro
     command: python main.py
