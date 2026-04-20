@@ -4,7 +4,7 @@ uk_flight_punctuality:
     dev:
       type: bigquery
       method: oauth
-      project: uk-flight-punctuality-492918
+      project: '# change to your GCP project ID'
       dataset: flight_data
       threads: 1
       timeout_seconds: 300
