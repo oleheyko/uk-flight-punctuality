@@ -6,6 +6,12 @@ import streamlit as st
 from google.api_core.exceptions import NotFound
 from google.cloud import bigquery
 
+# Optional Plotly import for charts; fall back to None when not installed
+try:
+    import plotly.express as px
+except Exception:
+    px = None
+
 
 def get_bq_client(project: Optional[str] = None) -> bigquery.Client:
     return bigquery.Client(project=project) if project else bigquery.Client()
@@ -104,7 +110,7 @@ def build_airport_delays_treemap(df: pd.DataFrame):
 
 # Load data automatically on startup
 @st.cache_data(ttl=3600)  # Cache for 1 hour
-def load_dashboard_data():
+def load_dashboard_data(project_id: Optional[str], dataset: str):
     try:
         # Load main delay data
         df = load_dbt_model_table(project_id or None, dataset, "fct_delay_over_years")
@@ -148,7 +154,7 @@ def main():
         dataset = os.getenv("BIGQUERY_DATASET", "flight_data")
 
     # Load data
-    df, recent_date_df, tracked_flights_df, monthly_delay_df = load_dashboard_data()
+    df, recent_date_df, tracked_flights_df, monthly_delay_df = load_dashboard_data(project_id or None, dataset)
 
     if df is not None:
         # Display metrics
@@ -216,3 +222,5 @@ def main():
     # Footer
     st.divider()
     st.caption("Dashboard automatically refreshes data every hour. Built with Streamlit and powered by BigQuery.")
+
+main()

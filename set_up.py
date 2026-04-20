@@ -45,7 +45,8 @@ def write_env_file() -> None:
         return
 
     ENV_FILE.parent.mkdir(parents=True, exist_ok=True)
-    ENV_FILE.write_text("\n".join(f"{key}={value}" for key, value in DEFAULT_ENV.items()) + "\n")
+    entries = [f"{key}={value}" for key, value in DEFAULT_ENV.items() if value]
+    ENV_FILE.write_text("\n".join(entries) + ("\n" if entries else ""))
     print(f"Created {ENV_FILE} with default values.")
     print("Edit it before running the container if you want different bucket, year range, or BigQuery settings.")
 
@@ -68,6 +69,9 @@ def load_env_file() -> dict:
         key, val = line.split("=", 1)
         key = key.strip()
         val = val.strip()
+        # Skip empty values so we don't overwrite existing env vars with blanks
+        if val == "":
+            continue
         parsed[key] = val
         # Do not overwrite existing environment variables
         if key not in os.environ:

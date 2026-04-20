@@ -37,11 +37,12 @@ As a frequent flyer, the question arises: which UK airlines, airports consistent
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/keys/my-creds.json"
 ```
+You can copy this path by right-clicking on the `my-creds.json` file in your file explorer and selecting "Copy Path".
 6. Configure Terraform to use your Google Cloud project by setting the `project` variable in `infra/variables.tf` to your project ID.
 7. Provision infrastructure using Terraform. Run `terraform init` and `terraform apply` in the `infra/` directory. This creates a BigQuery dataset, Cloud Storage bucket, and Cloud Run services.
 8. Create github secrets for your repository. This is for github workflows to authenticate with Google Cloud and run ingestion/dbt/dashboard in Cloud Run. The required secrets are:
    - `GCP_PROJECT`: Your Google Cloud project ID
-   - `GCP_REGION`: The region where your Cloud Run services are deployed (e.g., `europe-west2`)
+   - `GCP_REGION`: europe-west2
    - `GCP_SA_KEY`: The contents of your service account JSON key file
 To find secrets, please, navigate to your repository on GitHub -> Settings -> Secrets and variables -> Actions -> New repository secret.
 9. Run `uv run set_up.py --project <YOUR_GCP_PROJECT_ID>` to set up the environment. This creates dbt profiles for BigQuery authentication and builds Docker images for the ingest, dbt, and dashboard applications, pushing them to Google Container Registry.
@@ -59,5 +60,4 @@ The BigQuery dataset will contain tables like `punctuality_data_2000`, `punctual
 - Navigate to dbt folder through the terminal - `cd dbt`. Run dbt transformations: `uv run dbt run`.
 - Run Streamlit dashboard: `uv run streamlit run dashboard/app.py`. This will start the Streamlit app locally, which you can access at `http://localhost:8501`.
 
-
-
+## Running in Cloud Run via GitHub Workflows
