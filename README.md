@@ -201,10 +201,23 @@ cd dbt
 uv run dbt test
 ```
 
+# Dashboard Visualizations
+The Streamlit dashboard provides the following visualizations and interactive controls used to explore UK flight punctuality trends and metrics.
+
+- `Annual Average Delay Trend` — line chart showing the annual average delay (minutes) for scheduled flights. Use the year range selector to focus on specific periods and the airline filter to compare carriers.
+- `Average Delay by Month (Last Year)` — bar/line chart that displays monthly average delays for the most recent complete year to highlight seasonal patterns.
+- `Recent Airport Delays` — treemap (or choropleth-style visual) showing average delay by reporting airport for the most recent reporting period. Hover to see exact values and click to filter other charts.
+- `Recent Number of Tracked Flights` — KPI metric showing the total number of tracked flights in the most recent period; updates with filters.
+- `Most Recent Published Date` — KPI metric showing the most recent reporting month and year in a human-readable format.
+
+![image](readme_figs/streamlit_dashboard.png)
+
 # Future Improvements / Work in Progress
 - Add black/isort pre-commit hooks for code formatting and linting.
 - Delete irreleval data models in dbt/intermediate/ and dbt/marts/ that are not used by the Streamlit app to reduce confusion and maintenance overhead.
 - Simplify the terminal commands for running the ingestion, dbt, and dashboard applications locally by creating dedicated scripts or Makefile targets that encapsulate the necessary environment variable exports and command invocations.
+- Add dbt models comparing low-cost airlines flying from UK.
+- Add interactive filters to the Streamlit dashboard to allow users to explore delays by airline, origin/destination pairs, and other dimensions.
 
 # Thank you!
-Thank you for checking out this project! If you have any questions or feedback, feel free to open an issue or reach out to me by ![email](mailto:47990682+oleheyko@users.noreply.github.com). 
+Thank you for checking out this project! If you have any questions or feedback, feel free to open an issue or reach out to me by 47990682+oleheyko@users.noreply.github.com. 
