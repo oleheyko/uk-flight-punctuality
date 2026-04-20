@@ -61,41 +61,13 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     setup_logging()
-    args = parse_args()
+    # Run normalization by default when executing the script directly
     # Try loading .env from root first, then fall back to local folder (for container mounting)
     root_env = Path(__file__).resolve().parent.parent / ".env"
     local_env = Path(__file__).resolve().parent / ".env"
     load_dotenv_file(root_env)
     load_dotenv_file(local_env)
     config = Config.from_env()
-
-    if args.normalize_all_years:
-        logging.info(
-            "Building normalized unioned BigQuery table from existing yearly tables in %s",
-            config.bigquery_dataset,
-        )
-        bq_client = (
-            bigquery.Client(project=config.bigquery_project)
-            if config.bigquery_project
-            else bigquery.Client()
-        )
-        ensure_dataset(
-            client=bq_client,
-            dataset_id=config.bigquery_dataset,
-            location=config.bigquery_location,
-        )
-        try:
-            load_normalized_union_table(
-                client=bq_client,
-                dataset_id=config.bigquery_dataset,
-                table_prefix=config.bigquery_table_prefix,
-            )
-        except Exception as exc:
-            logging.exception(
-                "Failed to build normalized unioned BigQuery table: %s",
-                exc,
-            )
-        return
 
     logging.info(
         "Starting ingest for monthly punctuality full analysis CSV files from %s to %s",
@@ -213,6 +185,22 @@ def main() -> None:
                 )
             except Exception as exc:
                 logging.exception("Failed to load BigQuery table for year %s: %s", year, exc)
+
+        logging.info(
+            "Building normalized unioned BigQuery table from existing yearly tables in %s",
+            config.bigquery_dataset,
+        )
+        try:
+            load_normalized_union_table(
+                client=bq_client,
+                dataset_id=config.bigquery_dataset,
+                table_prefix=config.bigquery_table_prefix,
+            )
+        except Exception as exc:
+            logging.exception(
+                "Failed to build normalized unioned BigQuery table: %s",
+                exc,
+            )
     else:
         logging.info("No records found; skipping BigQuery load.")
 

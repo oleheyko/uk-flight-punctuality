@@ -187,6 +187,15 @@ def load_normalized_union_table(
             table_prefix=table_prefix,
         )
 
+    # Always exclude the destination table from the source list to avoid
+    # reading the already-normalized union back into the union operation.
+    if destination_table_name in source_table_names:
+        logging.info(
+            "Excluding destination table %s from source tables list",
+            destination_table_name,
+        )
+        source_table_names = [t for t in source_table_names if t != destination_table_name]
+
     raw_frames = []
     for table_name in source_table_names:
         logging.info("Reading BigQuery table %s.%s", dataset_id, table_name)

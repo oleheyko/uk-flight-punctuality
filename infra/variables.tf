@@ -5,7 +5,7 @@ variable "credentials" {
 
 variable "project_id" {
   description = "GCP project ID where the infrastructure will be created."
-  default     = "uk-flight-punctuality-492918"
+  default     = "your-gcp-project-id"
 }
 
 variable "region" {

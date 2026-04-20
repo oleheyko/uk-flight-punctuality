@@ -66,17 +66,17 @@ flowchart LR
 1. Create a Google Cloud project and enable the required APIs (BigQuery, Cloud Storage, Cloud Run). Reference: [DE Zoomcamp 1.3.2 - Terraform Basics](https://youtu.be/Y2ux7gq3Z0o?si=5r3IQlOst9R9p_sk). Note your project ID.
 2. Create a service account with the following permissions: Artifact Registry Admin, BigQuery Admin, Storage Admin, Cloud Run Admin, and IAM Admin. Generate and download a JSON key, then place it in the `keys/` folder and name it `my-creds.json`.
 3. Create a virtual environment and install dependencies using `uv sync` in the root of the repository.
-4. Set the `GCP_PROJECT` environment variable to your Google Cloud project ID in the `.env` file. You can add environment variables to a `.env` file in the root of the repository. Please, only update the `GCP_PROJECT` variable in the provided `.env` template and do not change other variables, as they have default values that work with the provided Terraform configuration.
-5. Export Google Application Credentials environment variable to point to your service account key file. This is required for local runs of the ingestion, dbt, and dashboard applications. For example:
+4. Set the `GCP_PROJECT` environment variable to your Google Cloud project ID in the `.env` file. You can add environment variables to a `.env` file in the root of the repository. Update the `GCP_PROJECT` variable with your project ID and ensure `GCP_REGION` is set to your desired region (e.g., `europe-west2`).
+5. Export Google Application Credentials environment variable to point to your service account key file. This is required for local runs of the ingestion and dashboard applications. For example:
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/keys/my-creds.json"
 ```
 You can copy this path by right-clicking on the `my-creds.json` file in your file explorer and selecting "Copy Path".
-6. Configure Terraform to use your Google Cloud project by setting the `project` variable in `infra/variables.tf` to your project ID.
+6. Configure Terraform to use your Google Cloud project by setting the `project` variable in `infra/variables.tf` to your project ID. Similarly, set the `region` variable to your desired region (e.g., `europe-west2`). These variables are used in the Terraform configuration to create resources in the correct project and region.
 7. Provision infrastructure using Terraform. Run `terraform init` and `terraform apply` in the `infra/` directory. This creates a BigQuery dataset, Cloud Storage bucket, and Cloud Run services.
 8. Create github secrets for your repository. This is for github workflows to authenticate with Google Cloud and run ingestion/dbt/dashboard in Cloud Run. The required secrets are:
    - `GCP_PROJECT`: Your Google Cloud project ID
-   - `GCP_REGION`: europe-west2
+   - `GCP_REGION`: europe-west2 (or the region you specified in Terraform variables)
    - `GCP_SA_KEY`: The contents of your service account JSON key file
 To find secrets, please, navigate to your repository on GitHub -> Settings -> Secrets and variables -> Actions -> New repository secret.
 9. Run `uv run set_up.py --project <YOUR_GCP_PROJECT_ID>` to set up the environment. This creates dbt profiles for BigQuery authentication and builds Docker images for the ingest, dbt, and dashboard applications, pushing them to Google Container Registry.
@@ -90,7 +90,6 @@ After the ingestion, the Cloud Storage will look:
 ![image](readme_figs/cloud_storage_after_ingest.png)
 The BigQuery dataset will contain tables like `punctuality_data_2000`, `punctuality_data_2001`, etc. with the raw ingested data under the configured dataset.
 ![image](readme_figs/bq_after_ingestion.png)
-- Create a unioned view in BigQuery for all years using `uv run ingest/main.py --normalize-all-years`.
 - In order to run dbt transformations, you need to set up profiles.yml for dbt. Previously mentioned `uv run set_up.py` command only create profiles_container.yml to be used in the container. This yaml file sets OAuth authentication in Google Cloud. For local runs, you must create a `profiles.yml` in the `dbt/` directory with the following content:
 ```yaml
 uk_flight_punctuality:              # your profile name (same as in dbt_project.yml)
@@ -127,7 +126,18 @@ Make sure to replace `path/to/your/service_account_key.json` with the actual pat
 The data is sourced from the UK Civil Aviation Authority (CAA) and contains detailed information on flight punctuality for UK airports. The dataset includes records from the year 2000 through 2025.
 
 ## Data Schema
+Key fields in the unioned BigQuery table (used by dbt and the dashboard):
 
+- `year` (INTEGER) — reporting year
+- `month` (INTEGER) — reporting month
+- `reporting_period_date` (DATE) — canonical partition date
+- `reporting_airport` (STRING) — airport code
+- `origin_destination` (STRING) — origin–destination pair
+- `origin_destination_country` (STRING) — route country
+- `airline_name` (STRING) — carrier name
+- `scheduled_charter` (STRING) — scheduled/charter flag
+- Counts (INTEGER): `number_flights_matched`, `actual_flights_unmatched`, `planned_flights_unmatched`, `number_flights_cancelled`
+- Delay metrics (FLOAT): delay percentage bands and aggregates such as `early_to_15_mins_late_percent`, `0_to_15_mins_late_percent`, `flts_16_to_30_mins_late_percent`, `flts_31_to_60_mins_late_percent`, `flts_61_to_180_mins_late_percent`, `flts_181_to_360_mins_late_percent`, `more_than_360_mins_late_percent`, `average_delay_mins`, plus `flights_unmatched_percent` and `flights_cancelled_percent`.
 
 ## Data Models
 dbt models are defined in the `dbt/models/` directory. The repo stages a
@@ -191,3 +201,10 @@ cd dbt
 uv run dbt test
 ```
 
+# Future Improvements / Work in Progress
+- Add black/isort pre-commit hooks for code formatting and linting.
+- Delete irreleval data models in dbt/intermediate/ and dbt/marts/ that are not used by the Streamlit app to reduce confusion and maintenance overhead.
+- Simplify the terminal commands for running the ingestion, dbt, and dashboard applications locally by creating dedicated scripts or Makefile targets that encapsulate the necessary environment variable exports and command invocations.
+
+# Thank you!
+Thank you for checking out this project! If you have any questions or feedback, feel free to open an issue or reach out to me by ![email](mailto:47990682+oleheyko@users.noreply.github.com). 
