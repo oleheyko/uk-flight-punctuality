@@ -28,6 +28,40 @@ As a frequent flyer, the question arises: which UK airlines, airports consistent
 - `infra/`: Terraform configuration for provisioning infrastructure on Google Cloud Platform.
 - `set_up.py`: Setup script for the project environment and profiles. Configures environment variables, dbt profiles, and builds Docker images for the ingest, dbt, and dashboard applications, pushing them to Google Container Registry for use in Cloud Run.
 
+# Architecture
+
+The high-level architecture of the project (ingest → storage → transformation → dashboard):
+
+```mermaid
+flowchart LR
+  subgraph Ingest
+    direction LR
+    A["Ingest service<br/>(ingest/main.py)"]
+    GCS[("Cloud Storage")]
+    A -->|"Upload CSVs"| GCS
+  end
+
+   GCS -->|"BigQuery load jobs"| B["BigQuery<br/>raw dataset"]
+
+  subgraph Transform
+    direction LR
+    C["dbt<br/>(Cloud Run job / CI)"]
+    D["BigQuery<br/>Marts"]
+    B --> C --> D
+  end
+
+  subgraph Serve
+    direction LR
+    E["Streamlit<br/>(dashboard/app.py on GCP)"]
+    F["Browser"]
+    D --> E -->|"Users"| F
+  end
+
+   O["GitHub Actions<br/>(Scheduler / Orchestrator)"] --> A
+   O --> C
+```
+
+
 # Getting Started
 1. Create a Google Cloud project and enable the required APIs (BigQuery, Cloud Storage, Cloud Run). Reference: [DE Zoomcamp 1.3.2 - Terraform Basics](https://youtu.be/Y2ux7gq3Z0o?si=5r3IQlOst9R9p_sk). Note your project ID.
 2. Create a service account with the following permissions: Artifact Registry Admin, BigQuery Admin, Storage Admin, Cloud Run Admin, and IAM Admin. Generate and download a JSON key, then place it in the `keys/` folder and name it `my-creds.json`.
@@ -57,6 +91,24 @@ After the ingestion, the Cloud Storage will look:
 The BigQuery dataset will contain tables like `punctuality_data_2000`, `punctuality_data_2001`, etc. with the raw ingested data under the configured dataset.
 ![image](readme_figs/bq_after_ingestion.png)
 - Create a unioned view in BigQuery for all years using `uv run ingest/main.py --normalize-all-years`.
+- In order to run dbt transformations, you need to set up profiles.yml for dbt. Previously mentioned `uv run set_up.py` command only create profiles_container.yml to be used in the container. This yaml file sets OAuth authentication in Google Cloud. For local runs, you must create a `profiles.yml` in the `dbt/` directory with the following content:
+```yaml
+uk_flight_punctuality:              # your profile name (same as in dbt_project.yml)
+  target: dev
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account                # or "oauth" if you want user‑based auth
+      project:                               # your Google Cloud project ID
+      dataset: flight_data                   # BigQuery dataset for dev
+      threads: 1                             # number of parallel queries
+      timeout_seconds: 300                   # query timeout in seconds
+      location: europe-west2                 # BigQuery location (e.g. US, EU, us‑west2)
+      priority: interactive                  # or "batch"
+      keyfile: path/to/your/service_account_key.json 
+      retries: 1
+```
+Make sure to replace `path/to/your/service_account_key.json` with the actual path to your service account key file (e.g., `../keys/my-creds.json` if your `profiles.yml` is in the `dbt/` directory and your key is in the `keys/` directory at the root of the repo).
 - Navigate to dbt folder through the terminal - `cd dbt`. Run dbt transformations: `uv run dbt run`.
 - Run Streamlit dashboard: `uv run streamlit run dashboard/app.py`. This will start the Streamlit app locally, which you can access at `http://localhost:8501` or the link provided in the terminal output. In VS Code, you can also click on Ports in the bottom panel, find the forwarded port for Streamlit, and click "Open in Browser" to access the dashboard. If your browser does not open the dashboard, try to use the other browser. 
 
@@ -69,7 +121,15 @@ The BigQuery dataset will contain tables like `punctuality_data_2000`, `punctual
 ![image](readme_figs/cloud_run_dashboard_service.png)
 ![image](readme_figs/cloud_run_dashboard_service_status.png)
 
-# Data Model
+# Data
+
+## Data Source
+The data is sourced from the UK Civil Aviation Authority (CAA) and contains detailed information on flight punctuality for UK airports. The dataset includes records from the year 2000 through 2025.
+
+## Data Schema
+
+
+## Data Models
 dbt models are defined in the `dbt/models/` directory. The repo stages a
 year-by-year unioned source into dbt and builds a small set of final marts
 consumed by the Streamlit dashboard.
@@ -115,35 +175,19 @@ Only the models listed above are included in the deployed Streamlit app; other
 dbt models in the project exist for exploration or auxiliary analyses and are
 not required for dashboard rendering.
 
-# Architecture
+## Data Tests
 
-The high-level architecture of the project (ingest → storage → transformation → dashboard):
+This project includes a small set of dbt tests that validate key assumptions in the staging model (`stg_punctuality_data`). They run as part of local dbt checks and CI to catch data-quality regressions early.
 
-```mermaid
-flowchart LR
-  subgraph Ingest
-    direction LR
-    A["Ingest service<br/>(ingest/main.py)"]
-    GCS[("Cloud Storage")]
-    A -->|"Upload CSVs"| GCS
-  end
+- `test_stg_non_negative_counts.sql` — asserts that count-like fields are never negative (e.g., `number_flights_matched`, `actual_flights_unmatched`, `planned_flights_unmatched`, `number_flights_cancelled`).
+- `test_stg_percent_bounds.sql` — asserts percent fields fall within the 0–100 range (e.g., `flights_cancelled_percent`, `flights_unmatched_percent`, `more_than_360_mins_late_percent`).
 
-   GCS -->|"BigQuery load jobs"| B["BigQuery<br/>raw dataset"]
+Tests are also defined in corresponding schemas for the staging model in `dbt/models/staging/schema.yml` and `dbt/models/intermediate/schema.yml` as part of the dbt test suite. Particularly, the `not_null` tests are set in the former one and `unique` test is set for the `unique_row_id` field in the intermediate model `int_scheduled_flights`.ß
 
-  subgraph Transform
-    direction LR
-    C["dbt<br/>(Cloud Run job / CI)"]
-    D["BigQuery<br/>Marts"]
-    B --> C --> D
-  end
+How to run tests locally:
 
-  subgraph Serve
-    direction LR
-    E["Streamlit<br/>(dashboard/app.py on GCP)"]
-    F["Browser"]
-    D --> E -->|"Users"| F
-  end
-
-   O["GitHub Actions<br/>(Scheduler / Orchestrator)"] --> A
-   O --> C
+```bash
+cd dbt
+uv run dbt test
 ```
+

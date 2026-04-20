@@ -4,24 +4,44 @@ models:
   - name: stg_punctuality_data
     description: "Stage the punctuality dataset from BigQuery for downstream transformations from 2000 through 2025."
     columns:
+      - name: unique_row_id
+        description: "Unique identifier for each record, generated as an MD5 hash of key attributes."
+        tests:
+          - not_null
       - name: year
         description: "Year extracted from the reporting period."
+        tests:
+          - not_null
       - name: month
         description: "Month extracted from the reporting period."
+        tests:
+          - not_null
       - name: reporting_period_date
         description: "Canonical date representing the reporting month for partitioning."
+        tests:
+          - not_null
       - name: reporting_airport
         description: "Airport code for the reporting airport."
+        tests:
+          - not_null
       - name: origin_destination_country
         description: "Origin or destination country associated with the route."
+        tests:
+          - not_null
       - name: origin_destination
         description: "Origin and destination pair for the route."
+        tests:
+          - not_null
       - name: airline_name
         description: "Carrier name for the flight record."
+        tests:
+          - not_null
       - name: scheduled_charter
         description: "Charter status of the scheduled flight."
       - name: number_flights_matched
         description: "Number of matched flights in the reporting period."
+        tests:
+          - not_null
       - name: actual_flights_unmatched
         description: "Count of actual flights that were unmatched."
       - name: early_to_15_mins_late_percent

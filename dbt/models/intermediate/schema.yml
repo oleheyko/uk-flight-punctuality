@@ -1,0 +1,11 @@
+version: 2
+
+models:
+  - name: int_scheduled_flights
+    description: "Intermediate model for scheduled flights data, transformed from the staging layer for further analysis and reporting."
+    columns:
+      - name: unique_row_id
+        description: "Unique identifier for each record, inherited from the staging layer."
+        tests:
+          - not_null
+          - unique

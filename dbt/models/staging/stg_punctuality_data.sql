@@ -8,6 +8,14 @@
 ) }}
 
 select
+    MD5(CONCAT(
+              COALESCE(CAST(month AS STRING), ""),
+              COALESCE(CAST(year AS STRING), ""),
+              COALESCE(CAST(reporting_airport AS STRING), ""),
+              COALESCE(CAST(origin_destination AS STRING), ""),
+              COALESCE(CAST(airline_name AS STRING), ""),
+              COALESCE(CAST(scheduled_charter AS STRING), "")
+            )) AS unique_row_id,
     year,
     month,
     date(year, month, 1) as reporting_period_date,
