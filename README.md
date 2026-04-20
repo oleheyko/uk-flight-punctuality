@@ -63,7 +63,7 @@ flowchart LR
 
 
 # Getting Started
-1. Create a Google Cloud project and enable the required APIs (BigQuery, Cloud Storage, Cloud Run, Artifact Registry). Reference: [DE Zoomcamp 1.3.2 - Terraform Basics](https://youtu.be/Y2ux7gq3Z0o?si=5r3IQlOst9R9p_sk). Note your project ID.
+1. Create a Google Cloud project and enable the required APIs (BigQuery, Cloud Storage, Cloud Run Admin API, Artifact Registry API). Reference: [DE Zoomcamp 1.3.2 - Terraform Basics](https://youtu.be/Y2ux7gq3Z0o?si=5r3IQlOst9R9p_sk). Note your project ID.
 2. Create a service account with the following permissions: Artifact Registry Admin, BigQuery Admin, Storage Admin, Cloud Run Admin, and IAM Admin. Generate and download a JSON key, then place it in the `keys/` folder and name it `my-creds.json`.
 3. Create a virtual environment and install dependencies using `uv sync` in the root of the repository.
 4. Set the `GCP_PROJECT` environment variable to your Google Cloud project ID in the `.env` file. You can add environment variables to a `.env` file in the root of the repository. Update the `GCP_PROJECT` variable with your project ID and ensure `GCP_REGION` is set to your desired region (e.g., `europe-west2`).
@@ -118,6 +118,7 @@ uk_flight_punctuality:              # your profile name (same as in dbt_project.
       retries: 1
 ```
 Make sure to replace `path/to/your/service_account_key.json` with the actual path to your service account key file (e.g., `../keys/my-creds.json` if your `profiles.yml` is in the `dbt/` directory and your key is in the `keys/` directory at the root of the repo).
+- You also need to set the sources for dbt. In `dbt/models/staging/sources.yml`, update the `database` field to your Google Cloud project ID.
 - Navigate to dbt folder through the terminal - `cd dbt`. Run dbt transformations: `uv run dbt run`.
 - Run Streamlit dashboard: `uv run streamlit run dashboard/app.py`. This will start the Streamlit app locally, which you can access at `http://localhost:8501` or the link provided in the terminal output. In VS Code, you can also click on Ports in the bottom panel, find the forwarded port for Streamlit, and click "Open in Browser" to access the dashboard. If your browser does not open the dashboard, try to use the other browser. 
 
