@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: source_data
-    database: uk-flight-punctuality-492918
+    database: 
     schema: flight_data
     description: "BigQuery dataset containing raw punctuality tables."
     tables:

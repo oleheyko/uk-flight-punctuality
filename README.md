@@ -63,7 +63,7 @@ flowchart LR
 
 
 # Getting Started
-1. Create a Google Cloud project and enable the required APIs (BigQuery, Cloud Storage, Cloud Run). Reference: [DE Zoomcamp 1.3.2 - Terraform Basics](https://youtu.be/Y2ux7gq3Z0o?si=5r3IQlOst9R9p_sk). Note your project ID.
+1. Create a Google Cloud project and enable the required APIs (BigQuery, Cloud Storage, Cloud Run, Artifact Registry). Reference: [DE Zoomcamp 1.3.2 - Terraform Basics](https://youtu.be/Y2ux7gq3Z0o?si=5r3IQlOst9R9p_sk). Note your project ID.
 2. Create a service account with the following permissions: Artifact Registry Admin, BigQuery Admin, Storage Admin, Cloud Run Admin, and IAM Admin. Generate and download a JSON key, then place it in the `keys/` folder and name it `my-creds.json`.
 3. Create a virtual environment and install dependencies using `uv sync` in the root of the repository.
 4. Set the `GCP_PROJECT` environment variable to your Google Cloud project ID in the `.env` file. You can add environment variables to a `.env` file in the root of the repository. Update the `GCP_PROJECT` variable with your project ID and ensure `GCP_REGION` is set to your desired region (e.g., `europe-west2`).
@@ -73,13 +73,23 @@ export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/keys/my-creds.json"
 ```
 You can copy this path by right-clicking on the `my-creds.json` file in your file explorer and selecting "Copy Path".
 6. Configure Terraform to use your Google Cloud project by setting the `project` variable in `infra/variables.tf` to your project ID. Similarly, set the `region` variable to your desired region (e.g., `europe-west2`). These variables are used in the Terraform configuration to create resources in the correct project and region.
-7. Provision infrastructure using Terraform. Run `terraform init` and `terraform apply` in the `infra/` directory. This creates a BigQuery dataset, Cloud Storage bucket, and Cloud Run services.
-8. Create github secrets for your repository. This is for github workflows to authenticate with Google Cloud and run ingestion/dbt/dashboard in Cloud Run. The required secrets are:
+7. Install Terraform and initialize the working directory for Terraform in the `infra/` folder by running `terraform init`. This will download the necessary provider plugins and set up the backend for storing state.
+Install Terraform in Codespaces by running:
+```bash
+wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(grep -oP '(?<=UBUNTU_CODENAME=).*' /etc/os-release || lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+sudo apt update && sudo apt install terraform
+```
+8. Provision infrastructure using Terraform. Run `terraform plan` and `terraform apply` in the `infra/` directory. This creates a BigQuery dataset, Cloud Storage bucket, and Cloud Run services.
+9. Create github secrets for your repository. This is for github workflows to authenticate with Google Cloud and run ingestion/dbt/dashboard in Cloud Run. The required secrets are:
    - `GCP_PROJECT`: Your Google Cloud project ID
    - `GCP_REGION`: europe-west2 (or the region you specified in Terraform variables)
    - `GCP_SA_KEY`: The contents of your service account JSON key file
 To find secrets, please, navigate to your repository on GitHub -> Settings -> Secrets and variables -> Actions -> New repository secret.
-9. Run `uv run set_up.py --project <YOUR_GCP_PROJECT_ID>` to set up the environment. This creates dbt profiles for BigQuery authentication and builds Docker images for the ingest, dbt, and dashboard applications, pushing them to Google Container Registry.
+9. Run `uv run set_up.py --project <YOUR_GCP_PROJECT_ID>` to set up the environment. This creates dbt profiles for BigQuery authentication and builds Docker images for the ingest, dbt, and dashboard applications, pushing them to Google Container Registry. 
+
+### Schedule GitHub workflows
+The last step 9 is necessary to set up the environment and build Docker images for Cloud Run. However, you can skip it if you only want to run the ingestion, dbt, and dashboard applications locally. The GitHub workflows are configured to use the images built by this setup script, so if you skip it, the workflows will fail to run in Cloud Run until you build and push the images manually.
 
 
 After setup, you can run the ingestion, dbt, and Streamlit dashboard locally or trigger GitHub workflows to run them in Cloud Run.
