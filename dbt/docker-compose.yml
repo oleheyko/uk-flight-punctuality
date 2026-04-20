@@ -6,5 +6,6 @@ services:
     working_dir: /usr/app
     volumes:
       - .:/usr/app:delegated
+      - /profiles_container.yml:/profiles.yml:ro
     entrypoint: ["dbt"]
     command: ["--help"]

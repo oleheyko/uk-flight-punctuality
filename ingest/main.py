@@ -62,7 +62,11 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     setup_logging()
     args = parse_args()
-    load_dotenv_file(Path(__file__).resolve().parent / ".env")
+    # Try loading .env from root first, then fall back to local folder (for container mounting)
+    root_env = Path(__file__).resolve().parent.parent / ".env"
+    local_env = Path(__file__).resolve().parent / ".env"
+    load_dotenv_file(root_env)
+    load_dotenv_file(local_env)
     config = Config.from_env()
 
     if args.normalize_all_years:

@@ -28,6 +28,7 @@ DEFAULT_ENV: Dict[str, str] = {
     "BIGQUERY_DATASET": "flight_data",
     "BIGQUERY_TABLE_PREFIX": "punctuality_data_",
     "BIGQUERY_LOCATION": "EU",
+    "GCP_PROJECT": ""  # No default for project since it's required
 }
 
 
@@ -173,7 +174,7 @@ def create_streamlit_secrets_file() -> None:
 
 def create_dbt_profiles_yml_file(args: argparse.Namespace) -> None:
     profiles_dir = ROOT / "dbt"
-    profiles_file = profiles_dir / "profiles.yml"
+    profiles_file = profiles_dir / "profiles_container.yml"
     if profiles_file.exists():
         print(f"Found existing {profiles_file}. Leaving it unchanged.")
         return

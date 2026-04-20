@@ -37,7 +37,6 @@ class Config:
 
     @classmethod
     def from_env(cls) -> "Config":
-        # bucket_name = "uk-flight-punctuality-raw-data-lake"
         bucket_name = os.getenv("BUCKET_NAME", "").strip()
         if not bucket_name:
             raise ValueError("BUCKET_NAME is required")

@@ -1,51 +1,45 @@
-# uk-flight-punctionality
+# UK Flight Punctuality Analytics
 
-A UK flight punctuality ingestion project that downloads CAA monthly CSV files, uploads them to Google Cloud Storage, and loads them into BigQuery.
+This repository is the capstone project for Data Engineering Zoomcamp by [DataTalks.Club](https://www.datatalks.club/). It contains a data pipeline and analytics project focused on UK flight punctuality. The project ingests flight data from the UK Civil Aviation Authority, processes it, and provides insights through a Streamlit dashboard.
 
-## Root setup helper
+# Problem Statement
+As a frequent flyer, the question arises: which UK airlines consistently delay their flights, impacting passenger experience and time? This analysis aims to identify patterns in UK flight delays by airline, airport, and time period. 
 
-Use `set_up.py` to create a local root `.env` file, build the ingestion and dbt Docker images from `ingest/Dockerfile` and `dbt/Dockerfile`, and push them to Google Artifact Registry.
+# Requirements
+- Unix-based system (macOS, Linux). Alternatively, you can use GitHub Codespaces.
+- A Google Cloud Platform account with the following APIs enabled: BigQuery API, Cloud Storage API, and Cloud Run API. 
 
-```bash
-python set_up.py --project YOUR_PROJECT_ID --repo YOUR_ARTIFACT_REGISTRY_REPO
-```
+# Technologies
+- **Data Ingestion**: Python (pandas, BeautifulSoup, requests)
+- **Data Warehouse**: Google BigQuery
+- **Data Transformation**: dbt (data build tool)
+- **Dashboard & Visualization**: Streamlit
+- **Infrastructure as Code**: Terraform
+- **Containerization**: Docker, Docker Compose
+- **Cloud Platform**: Google Cloud Platform (BigQuery, Cloud Storage, Cloud Run, Container Registry)
+- **Package Management**: uv
+- **CI/CD**: GitHub Actions
+- **Orchestration**: GitHub Workflows
 
-Or use an explicit image URI:
+# Project Structure
+- `ingest/`: Data ingestion and processing code. Can be run locally or triggered in Cloud Run via GitHub workflow.
+- `dbt/`: dbt project for data transformation and modeling. Runs locally or on Cloud Run via GitHub workflow.
+- `dashboard/`: Streamlit app for data visualization and analytics. Runs locally or on Cloud Run via GitHub workflow.
+- `infra/`: Terraform configuration for provisioning infrastructure on Google Cloud Platform.
+- `set_up.py`: Setup script for the project environment and profiles. Configures environment variables, dbt profiles, and builds Docker images for the ingest, dbt, and dashboard applications, pushing them to Google Container Registry for use in Cloud Run.
 
-```bash
-python set_up.py --image europe-west2-docker.pkg.dev/YOUR_PROJECT_ID/YOUR_REPO/uk-flight-ingest:latest
-```
+# Getting Started
+1. Create a Google Cloud project and enable the required APIs (BigQuery, Cloud Storage, Cloud Run). Reference: [DE Zoomcamp 1.3.2 - Terraform Basics](https://youtu.be/Y2ux7gq3Z0o?si=5r3IQlOst9R9p_sk). Note your project ID.
+2. Create a service account with the following permissions: Artifact Registry Admin, BigQuery Admin, Storage Admin, Cloud Run Admin, and IAM Admin. Generate and download a JSON key, then place it in the `keys/` folder and name it `my-creds.json`.
+3. Create a virtual environment and install dependencies using `uv sync` in the root of the repository.
+4. Set the `GCP_PROJECT` environment variable to your Google Cloud project ID. You can add environment variables to a `.env` file in the root of the repository.
+5. Configure Terraform to use your Google Cloud project by setting the `project` variable in `infra/variables.tf` to your project ID.
+6. Run `uv run set_up.py --project <YOUR_GCP_PROJECT_ID>` to set up the environment. This creates dbt profiles for BigQuery authentication and builds Docker images for the ingest, dbt, and dashboard applications, pushing them to Google Container Registry.
+7. Provision infrastructure using Terraform. Run `terraform init` and `terraform apply` in the `infra/` directory. This creates a BigQuery dataset, Cloud Storage bucket, and Cloud Run services.
 
-After the image is pushed:
+After setup, you can run the ingestion, dbt, and Streamlit dashboard locally or trigger GitHub workflows to run them in Cloud Run.
 
-1. Update `infra/terraform.tfvars` with the pushed image URI under `container_image`.
-2. Run Terraform from `infra/`:
-   ```bash
-   cd infra
-   terraform init
-   terraform apply
-   ```
 
-## Recommended workflow
 
-1. Build and push the container image with `set_up.py`.
-2. Provision GCP resources with Terraform in `infra/`.
-3. Verify the Cloud Run job and then let GitHub Actions invoke it on schedule.
 
-## GitHub scheduled runs
 
-A scheduled workflow has been added at `.github/workflows/scheduled-gcp-run.yml`.
-It runs on a cron schedule and can also be triggered manually from the GitHub UI.
-
-Configure the following repository secrets:
-- `GCP_PROJECT`
-- `GCP_REGION`
-- `GCP_JOB_NAME`
-- `GCP_SA_KEY`
-
-`GCP_SA_KEY` should contain the JSON key for a service account with permissions to execute Cloud Run jobs.
-
-## Notes
-
-- `set_up.py` only handles local image build and push.
-- Resource provisioning is handled separately by Terraform in `infra/`.

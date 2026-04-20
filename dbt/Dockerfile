@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/app
-COPY profiles.yml /root/.dbt/profiles.yml
+COPY profiles_container.yml /root/.dbt/profiles.yml
 COPY . /usr/app
 
 ENTRYPOINT ["dbt"]
