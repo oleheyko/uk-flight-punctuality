@@ -3,7 +3,7 @@
 This repository is the capstone project for Data Engineering Zoomcamp by [DataTalks.Club](https://www.datatalks.club/). It contains a data pipeline and analytics project focused on UK flight punctuality. The project ingests flight data from the UK Civil Aviation Authority, processes it, and provides insights through a Streamlit dashboard.
 
 # Problem Statement
-As a frequent flyer, the question arises: which UK airlines, airports consistently delay their flights, impacting passenger experience and time? This analysis aims to identify patterns in UK flight delays by airline, airport, and time period. 
+As a frequent flyer, I have always wondered which UK airlines, airports, and routes consistently cause flight delays, how those delays change over time, and which factors (airline, airport, month, or route) drive the worst passenger experience. This project tries to address that problem by providing a reproducible end-to-end analytics pipeline: ingesting raw UK Civil Aviation Authority punctuality data, loading it into BigQuery, transforming and aggregating it with dbt, and exposing a Streamlit dashboard for analysis. The resulting analysis make it straightforward to identify airports with persistent delays, compare seasonal and long-term trends.
 
 # Requirements
 - Unix-based system (macOS, Linux). Alternatively, you can use GitHub Codespaces.
