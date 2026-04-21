@@ -135,14 +135,14 @@ def main():
     except ImportError:  # plotly is optional for nicer charts
         px = None
 
-        st.set_page_config(
-            page_title="UK Flight Punctuality",
-            page_icon="✈️",
-            layout="wide",
-        )
+    st.set_page_config(
+        page_title="UK Flight Punctuality",
+        page_icon="✈️",
+        layout="wide",
+    )
 
-        st.title("UK Flight Punctuality Dashboard")
-        st.write("Real-time insights into UK flight punctuality data from BigQuery.")
+    st.title("UK Flight Punctuality Dashboard")
+    st.write("Real-time insights into UK flight punctuality data from BigQuery.")
 
     try:
         # Try Streamlit secrets first (for production)

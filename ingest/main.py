@@ -61,6 +61,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     setup_logging()
+    args = parse_args()
     # Run normalization by default when executing the script directly
     # Try loading .env from root first, then fall back to local folder (for container mounting)
     root_env = Path(__file__).resolve().parent.parent / ".env"

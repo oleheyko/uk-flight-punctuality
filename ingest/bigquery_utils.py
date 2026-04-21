@@ -18,7 +18,7 @@ def ensure_dataset(
         client.get_dataset(dataset_ref.reference)
         logging.info("BigQuery dataset already exists: %s", dataset_id)
         return
-    except Exception:
+    except NotFound:
         pass
 
     if not location:

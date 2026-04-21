@@ -52,10 +52,10 @@ class Config:
         overwrite = parse_bool(os.getenv("OVERWRITE", "false"), default=False)
         request_timeout = int(os.getenv("REQUEST_TIMEOUT", "60"))
 
-        bigquery_project = os.getenv("BIGQUERY_PROJECT", "").strip()
+        bigquery_project = os.getenv("GCP_PROJECT", "").strip()
         bigquery_dataset = os.getenv("BIGQUERY_DATASET", "flight_data").strip()
         bigquery_table_prefix = os.getenv("BIGQUERY_TABLE_PREFIX", "punctuality_data_").strip()
-        bigquery_location = os.getenv("BIGQUERY_LOCATION", "EU").strip()
+        bigquery_location = os.getenv("GCP_REGION", "EU").strip()
 
         return cls(
             bucket_name=bucket_name,
