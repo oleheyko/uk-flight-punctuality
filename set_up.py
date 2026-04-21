@@ -239,8 +239,39 @@ def create_dbt_profiles_yml_file(args: argparse.Namespace) -> None:
 
     with open(profiles_file, "w") as f:
         yaml.dump(profile_config, f, default_flow_style=False, sort_keys=False)
-
     print(f"Created dbt profiles.yml file at {profiles_file} with BigQuery project and dataset.")
+
+
+def create_dbt_sources_file(args: argparse.Namespace) -> None:
+    profiles_dir = ROOT / "dbt"    
+    # path for dbt model sources: <repo>/dbt/models/staging/sources.yml
+    sources_file = profiles_dir / "models" / "staging" / "sources.yml"
+    
+    # Prepare sources config and ensure the sources file exists (create if missing)
+    sources_config = {
+        "version": 2,
+        "sources": [
+            {
+                "name": "source_data",
+                "database": args.project,
+                "schema": "flight_data",
+                "description": "BigQuery dataset containing raw punctuality tables.",
+                "tables": [
+                    {
+                        "name": "punctuality_data_all_years",
+                        "description": "Raw BigQuery table imported from punctuality CSV data for all years."
+                    }
+                ]
+            }
+        ]
+    }
+
+    
+    with open(sources_file, "w") as sf:
+            yaml.dump(sources_config, sf, default_flow_style=False, sort_keys=False)
+    print(f"Created dbt sources file at {sources_file} with table punctuality_data_all_years.")
+
+    return
 
 
 def main() -> None:
@@ -288,6 +319,8 @@ def main() -> None:
     time.sleep(3)
     create_dbt_profiles_yml_file(args)
     print("dbt profiles file ensured.")
+    create_dbt_sources_file(args)
+    print("dbt sources file ensured.")
     time.sleep(3)
     ensure_artifact_repository(args.project, args.region, args.repo)
     print("Artifact Registry repository check complete.")
