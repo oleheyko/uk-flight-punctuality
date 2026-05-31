@@ -10,7 +10,7 @@ dependencies = [
     "google-cloud-bigquery",
     "requests>=2.33.1",
     "pandas>=2.3.3",
-    "pyarrow>=23.0.1",
+    "pyarrow",
     "pandas-gbq>=0.35.0",
     "dbt",
     "dbt-core",
