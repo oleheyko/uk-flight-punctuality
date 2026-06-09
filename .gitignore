@@ -60,3 +60,5 @@ ingest/__pycache__/
 __pycache__/
 .DS_Store
 .vscode/
+terraform.tfvars.exampletfplan
+tfplan

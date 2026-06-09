@@ -3,7 +3,7 @@
 This repository is the capstone project for Data Engineering Zoomcamp by [DataTalks.Club](https://www.datatalks.club/). It contains a data pipeline and analytics project focused on UK flight punctuality. The project ingests flight data from the UK Civil Aviation Authority, processes it, and provides insights through a Streamlit dashboard.
 
 # Problem Statement
-As a frequent flyer, I have always wondered which UK airlines, airports, and routes consistently cause flight delays, how those delays change over time, and which factors (airline, airport, month, or route) drive the worst passenger experience. This project tries to address that problem by providing a reproducible end-to-end analytics pipeline: ingesting raw UK Civil Aviation Authority punctuality data, loading it into BigQuery, transforming and aggregating it with dbt, and exposing a Streamlit dashboard for analysis. The resulting analysis make it straightforward to identify airports with persistent delays, compare seasonal and long-term trends.
+As a frequent flyer, I have always wondered which UK airlines, airports, and routes consistently cause flight delays, how those delays change over time, and which factors (airline, airport, month, or route) drive the worst passenger experience. This project tries to address that problem by providing a reproducible end-to-end analytics pipeline: ingesting raw UK Civil Aviation Authority punctuality data, loading it into BigQuery, transforming and aggregating it with dbt, and exposing a Streamlit dashboard for analysis. The resulting analysis makes it straightforward to identify airports with persistent delays, compare seasonal and long-term trends.
 
 # Requirements
 - Unix-based system (macOS, Linux). Alternatively, you can use GitHub Codespaces.
@@ -67,7 +67,7 @@ flowchart LR
 2. Create a service account with the following permissions: Artifact Registry Admin, BigQuery Admin, Storage Admin, Cloud Run Admin, and IAM Admin. Generate and download a JSON key, then place it in the `keys/` folder and name it `my-creds.json`.
 3. Create a virtual environment and install dependencies using `uv sync` in the root of the repository.
 4. Set the `GCP_PROJECT` environment variable to your Google Cloud project ID in the `.env` file. You can add environment variables to a `.env` file in the root of the repository. Update the `GCP_PROJECT` variable with your project ID and ensure `GCP_REGION` is set to your desired region (e.g., `europe-west2`).
-5. Export Google Application Credentials environment variable to point to your service account key file. This is required for local runs of the ingestion and dashboard applications. For example:
+5. Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to your service account key file path. This is required for local runs of the ingestion and dashboard applications. For example:
 ```bash
 export GOOGLE_APPLICATION_CREDENTIALS="/path/to/your/keys/my-creds.json"
 ```
@@ -81,15 +81,15 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashi
 sudo apt update && sudo apt install terraform
 ```
 8. Provision infrastructure using Terraform. Run `terraform plan` and `terraform apply` in the `infra/` directory. This creates a BigQuery dataset, Cloud Storage bucket, and Cloud Run services.
-9. Create github secrets for your repository. This is for github workflows to authenticate with Google Cloud and run ingestion/dbt/dashboard in Cloud Run. The required secrets are:
+9. Create GitHub secrets for your repository. This is for GitHub workflows to authenticate with Google Cloud and run ingestion/dbt/dashboard in Cloud Run. The required secrets are:
    - `GCP_PROJECT`: Your Google Cloud project ID
    - `GCP_REGION`: europe-west2 (or the region you specified in Terraform variables)
    - `GCP_SA_KEY`: The contents of your service account JSON key file
 To find secrets, please, navigate to your repository on GitHub -> Settings -> Secrets and variables -> Actions -> New repository secret.
-9. Run `uv run set_up.py --project <YOUR_GCP_PROJECT_ID>` to set up the environment. This creates dbt profiles for BigQuery authentication and builds Docker images for the ingest, dbt, and dashboard applications, pushing them to Google Container Registry. 
+10. Run `uv run set_up.py --project <YOUR_GCP_PROJECT_ID>` to set up the environment. This creates dbt profiles for BigQuery authentication and builds Docker images for the ingest, dbt, and dashboard applications, pushing them to Google Container Registry.
 
 ### Schedule GitHub workflows
-The last step 9 is necessary to set up the environment and build Docker images for Cloud Run. However, you can skip it if you only want to run the ingestion, dbt, and dashboard applications locally. The GitHub workflows are configured to use the images built by this setup script, so if you skip it, the workflows will fail to run in Cloud Run until you build and push the images manually.
+The last step 10 is necessary to set up the environment and build Docker images for Cloud Run. However, you can skip it if you only want to run the ingestion, dbt, and dashboard applications locally. The GitHub workflows are configured to use the images built by this setup script, so if you skip it, the workflows will fail to run in Cloud Run until you build and push the images manually.
 
 
 After setup, you can run the ingestion, dbt, and Streamlit dashboard locally or trigger GitHub workflows to run them in Cloud Run.
@@ -100,7 +100,7 @@ After the ingestion, the Cloud Storage will look:
 ![image](readme_figs/cloud_storage_after_ingest.png)
 The BigQuery dataset will contain tables like `punctuality_data_2000`, `punctuality_data_2001`, etc. with the raw ingested data under the configured dataset.
 ![image](readme_figs/bq_after_ingestion.png)
-- In order to run dbt transformations, you need to set up profiles.yml for dbt. Previously mentioned `uv run set_up.py` command only create profiles_container.yml to be used in the container. This yaml file sets OAuth authentication in Google Cloud. For local runs, you must create a `profiles.yml` in the `dbt/` directory with the following content:
+- In order to run dbt transformations, you need to set up profiles.yml for dbt. Previously mentioned `uv run set_up.py` command only creates profiles_container.yml to be used in the container. This YAML file sets OAuth authentication in Google Cloud. For local runs, you must create a `profiles.yml` in the `dbt/` directory with the following content:
 ```yaml
 uk_flight_punctuality:              # your profile name (same as in dbt_project.yml)
   target: dev
@@ -120,7 +120,7 @@ uk_flight_punctuality:              # your profile name (same as in dbt_project.
 Make sure to replace `path/to/your/service_account_key.json` with the actual path to your service account key file (e.g., `../keys/my-creds.json` if your `profiles.yml` is in the `dbt/` directory and your key is in the `keys/` directory at the root of the repo).
 - You also need to set the sources for dbt. In `dbt/models/staging/sources.yml`, update the `database` field to your Google Cloud project ID.
 - Navigate to dbt folder through the terminal - `cd dbt`. Run dbt transformations: `uv run dbt run`.
-- Run Streamlit dashboard: `uv run streamlit run dashboard/app.py`. This will start the Streamlit app locally, which you can access at `http://localhost:8501` or the link provided in the terminal output. In VS Code, you can also click on Ports in the bottom panel, find the forwarded port for Streamlit, and click "Open in Browser" to access the dashboard. If your browser does not open the dashboard, try to use the other browser. 
+- Run Streamlit dashboard: `uv run streamlit run dashboard/app.py`. This will start the Streamlit app locally, which you can access at `http://localhost:8501` or the link provided in the terminal output. In VS Code, you can also click on Ports in the bottom panel, find the forwarded port for Streamlit, and click "Open in Browser" to access the dashboard. If your browser doesn't open the dashboard, try another browser.
 
 ## Running in Cloud Run via GitHub Workflows
 - Trigger the ingestion workflow: Go to the "Actions" tab in your GitHub repository, find the workflow named "Ingest Data to BigQuery", and click "Run workflow". This will execute the ingestion process in Cloud Run, which will download, process, and load the flight data into BigQuery. Go to Cloud Run in your Google Cloud Console to monitor the execution of the ingestion service, through 'View logs'. After the workflow completes, check BigQuery to see the newly ingested tables.
@@ -203,7 +203,7 @@ This project includes a small set of dbt tests that validate key assumptions in 
 - `test_stg_non_negative_counts.sql` — asserts that count-like fields are never negative (e.g., `number_flights_matched`, `actual_flights_unmatched`, `planned_flights_unmatched`, `number_flights_cancelled`).
 - `test_stg_percent_bounds.sql` — asserts percent fields fall within the 0–100 range (e.g., `flights_cancelled_percent`, `flights_unmatched_percent`, `more_than_360_mins_late_percent`).
 
-Tests are also defined in corresponding schemas for the staging model in `dbt/models/staging/schema.yml` and `dbt/models/intermediate/schema.yml` as part of the dbt test suite. Particularly, the `not_null` tests are set in the former one and `unique` test is set for the `unique_row_id` field in the intermediate model `int_scheduled_flights`.ß
+Tests are also defined in corresponding schemas for the staging model in `dbt/models/staging/schema.yml` and `dbt/models/intermediate/schema.yml` as part of the dbt test suite. Particularly, the `not_null` tests are set in the former one and `unique` test is set for the `unique_row_id` field in the intermediate model `int_scheduled_flights`.
 
 How to run tests locally:
 
@@ -225,7 +225,7 @@ The Streamlit dashboard provides the following visualizations and interactive co
 
 # Future Improvements / Work in Progress
 - Add black/isort pre-commit hooks for code formatting and linting.
-- Delete irreleval data models in dbt/intermediate/ and dbt/marts/ that are not used by the Streamlit app to reduce confusion and maintenance overhead.
+- Delete irrelevant data models in dbt/intermediate/ and dbt/marts/ that are not used by the Streamlit app to reduce confusion and maintenance overhead.
 - Simplify the terminal commands for running the ingestion, dbt, and dashboard applications locally by creating dedicated scripts or Makefile targets that encapsulate the necessary environment variable exports and command invocations.
 - Add dbt models comparing low-cost airlines flying from UK.
 - Add interactive filters to the Streamlit dashboard to allow users to explore delays by airline, origin/destination pairs, and other dimensions.
