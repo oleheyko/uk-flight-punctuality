@@ -1,4 +1,3 @@
-import argparse
 import logging
 import os
 from pathlib import Path
@@ -44,24 +43,11 @@ def setup_logging() -> None:
     )
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="UK flight punctuality ingest pipeline"
-    )
-    parser.add_argument(
-        "--normalize-all-years",
-        action="store_true",
-        help=(
-            "Build the normalized unioned BigQuery table from already-loaded yearly tables "
-            "instead of downloading/uploading CSV files."
-        ),
-    )
-    return parser.parse_args()
+
 
 
 def main() -> None:
     setup_logging()
-    args = parse_args()
     # Run normalization by default when executing the script directly
     # Try loading .env from root first, then fall back to local folder (for container mounting)
     root_env = Path(__file__).resolve().parent.parent / ".env"

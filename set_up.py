@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-
-import argparse
 import os
 import shutil
 import subprocess
@@ -47,8 +45,8 @@ def write_env_file() -> None:
     ENV_FILE.parent.mkdir(parents=True, exist_ok=True)
     entries = [f"{key}={value}" for key, value in DEFAULT_ENV.items() if value]
     ENV_FILE.write_text("\n".join(entries) + ("\n" if entries else ""))
-    print(f"Created {ENV_FILE} with default values.")
-    print("Edit it before running the container if you want different bucket, year range, or BigQuery settings.")
+
+    raise ValueError(f"{ENV_FILE} created with default values. Please edit it to set GCP_PROJECT and any other desired settings before running the container.")
 
 
 def load_env_file() -> dict:
@@ -170,39 +168,19 @@ def ensure_artifact_repository(project: str, region: str, repo: str) -> None:
     print(f"Created Artifact Registry repository '{repo}' in {region}.")
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build and push ingest and dbt Docker images to GCP Artifact Registry")
-    parser.add_argument("--project", help="GCP project ID")
-    parser.add_argument("--region", help="GCP region / Artifact Registry location")
-    parser.add_argument("--repo", default="uk-flight-punctuality", help="Artifact Registry repository name")
-    parser.add_argument("--image-name", default=None, help="Ingest Docker image name")
-    parser.add_argument("--dbt-image-name", default=None, help="dbt Docker image name")
-    parser.add_argument("--dashboard-image-name", default=None, help="Streamlit dashboard Docker image name")
-    parser.add_argument("--tag", default="latest", help="Docker image tag")
-    parser.add_argument(
-        "--image",
-        help="Full ingest container image URI. If provided, project/region/repo/image-name/tag are ignored.",
-    )
-    parser.add_argument(
-        "--dbt-image",
-        help="Full dbt container image URI.",
-    )
-    return parser.parse_args()
-
-
-def create_streamlit_secrets_file(args: argparse.Namespace) -> None:
+def create_streamlit_secrets_file(project: str) -> None:
     secrets_dir = ROOT / ".streamlit"
     secrets_dir.mkdir(exist_ok=True)
     secrets_file = secrets_dir / "secrets.toml"
     if secrets_file.exists():
         print(f"Found existing {secrets_file}. Leaving it unchanged.")
         return
-    
+
     bigquery_dataset = os.getenv("BIGQUERY_DATASET", "flight_data")
     if not bigquery_dataset:
         raise ValueError("BIGQUERY_DATASET environment variable is required to create Streamlit secrets file.")
 
-    secrets_content = f"""[bigquery]\nproject_id = "{args.project}"\ndataset = "{bigquery_dataset}"\n"""
+    secrets_content = f"""[bigquery]\nproject_id = "{project}"\ndataset = "{bigquery_dataset}"\n"""
 
     with open(secrets_file, "w") as f:
         f.write(secrets_content)
@@ -211,8 +189,9 @@ def create_streamlit_secrets_file(args: argparse.Namespace) -> None:
     return
 
 
-def create_dbt_profiles_yml_file(args: argparse.Namespace) -> None:
+def create_dbt_profiles_yml_file(project: str, region: str) -> None:
     profiles_dir = ROOT / "dbt"
+    profiles_dir.mkdir(parents=True, exist_ok=True)
     profiles_file = profiles_dir / "profiles_container.yml"
     if profiles_file.exists():
         print(f"Found existing {profiles_file}. Leaving it unchanged.")
@@ -225,11 +204,11 @@ def create_dbt_profiles_yml_file(args: argparse.Namespace) -> None:
                 "dev": {
                     "type": "bigquery",
                     "method": "oauth",
-                    "project": args.project,
+                    "project": project,
                     "dataset": "flight_data",
                     "threads": 1,
                     "timeout_seconds": 300,
-                    "location": args.region,
+                    "location": region,
                     "priority": "interactive",
                     "retries": 1
                 }
@@ -242,18 +221,20 @@ def create_dbt_profiles_yml_file(args: argparse.Namespace) -> None:
     print(f"Created dbt profiles.yml file at {profiles_file} with BigQuery project and dataset.")
 
 
-def create_dbt_sources_file(args: argparse.Namespace) -> None:
-    profiles_dir = ROOT / "dbt"    
+def create_dbt_sources_file(project: str) -> None:
+    profiles_dir = ROOT / "dbt"
     # path for dbt model sources: <repo>/dbt/models/staging/sources.yml
     sources_file = profiles_dir / "models" / "staging" / "sources.yml"
-    
+
     # Prepare sources config and ensure the sources file exists (create if missing)
+    sources_file.parent.mkdir(parents=True, exist_ok=True)
+
     sources_config = {
         "version": 2,
         "sources": [
             {
                 "name": "source_data",
-                "database": args.project,
+                "database": project,
                 "schema": "flight_data",
                 "description": "BigQuery dataset containing raw punctuality tables.",
                 "tables": [
@@ -265,64 +246,53 @@ def create_dbt_sources_file(args: argparse.Namespace) -> None:
             }
         ]
     }
-
-    
     with open(sources_file, "w") as sf:
-            yaml.dump(sources_config, sf, default_flow_style=False, sort_keys=False)
+        yaml.dump(sources_config, sf, default_flow_style=False, sort_keys=False)
     print(f"Created dbt sources file at {sources_file} with table punctuality_data_all_years.")
 
     return
 
 
 def main() -> None:
-    
+
     write_env_file()
     print("Environment file ensured.")
     time.sleep(3)
-    
-    args = parse_args()
 
-    # If project or region not provided via CLI, try reading them from .env
-    if not args.project or not args.region:
-        load_env_file()
+    # Load environment variables from .env (if present)
+    load_env_file()
 
-    project = args.project or os.getenv("GCP_PROJECT")
+    project = os.getenv("GCP_PROJECT")
     if not project:
-        print("Error: GCP project ID is required. Provide --project or set GCP_PROJECT.")
-        sys.exit(1)
+        raise ValueError("GCP_PROJECT environment variable is required but not set. Please set it in the .env file or your environment before running this script.")
 
-    # Determine region: CLI arg > .env / env var > fallback default
-    region = args.region or os.getenv("GCP_REGION") or "europe-west2"
-    if not region:
-        print("Error: GCP region is required. Provide --region or set GCP_REGION.")
-        sys.exit(1)
+    region = os.getenv("GCP_REGION") or "europe-west2"
 
-    # Keep args in sync for downstream functions that expect them
-    args.project = project
-    args.region = region
+    repo = os.getenv("ARTIFACT_REPO", "uk-flight-punctuality")
+    tag = os.getenv("IMAGE_TAG", "latest")
 
-    ingest_image_name = args.image_name or "uk-flight-ingest"
-    ingest_image = f"{region}-docker.pkg.dev/{project}/{args.repo}/{ingest_image_name}:{args.tag}"
+    ingest_image_name = os.getenv("INGEST_IMAGE_NAME", "uk-flight-ingest")
+    ingest_image = f"{region}-docker.pkg.dev/{project}/{repo}/{ingest_image_name}:{tag}"
 
-    dbt_image_name = args.dbt_image_name or "uk-flight-dbt"
-    dbt_image = f"{region}-docker.pkg.dev/{project}/{args.repo}/{dbt_image_name}:{args.tag}"
+    dbt_image_name = os.getenv("DBT_IMAGE_NAME", "uk-flight-dbt")
+    dbt_image = f"{region}-docker.pkg.dev/{project}/{repo}/{dbt_image_name}:{tag}"
 
-    dashboard_image_name = args.dashboard_image_name or "uk-flight-dashboard"
-    dashboard_image = f"{region}-docker.pkg.dev/{project}/{args.repo}/{dashboard_image_name}:{args.tag}"
+    dashboard_image_name = os.getenv("DASHBOARD_IMAGE_NAME", "uk-flight-dashboard")
+    dashboard_image = f"{region}-docker.pkg.dev/{project}/{repo}/{dashboard_image_name}:{tag}"
 
     check_program("docker")
     print("Verified required programs are available.")
     time.sleep(2)
 
-    create_streamlit_secrets_file(args)
+    create_streamlit_secrets_file(project)
     print("Streamlit secrets file ensured.")
     time.sleep(3)
-    create_dbt_profiles_yml_file(args)
+    create_dbt_profiles_yml_file(project, region)
     print("dbt profiles file ensured.")
-    create_dbt_sources_file(args)
+    create_dbt_sources_file(project)
     print("dbt sources file ensured.")
     time.sleep(3)
-    ensure_artifact_repository(args.project, args.region, args.repo)
+    ensure_artifact_repository(project, region, repo)
     print("Artifact Registry repository check complete.")
     time.sleep(3)
     gcloud_auth_docker(region)
