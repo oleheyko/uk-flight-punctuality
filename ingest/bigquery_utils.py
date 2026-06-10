@@ -52,7 +52,9 @@ def parse_punctuality_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
     df = df.copy()
     if "reporting_period" not in df.columns:
-        raise ValueError("CSV must include a reporting_period column to derive year and month")
+        raise ValueError(
+            "CSV must include a reporting_period column to derive year and month"
+        )
 
     df["year"], df["month"] = parse_reporting_period(df["reporting_period"])
     df = df.drop(columns=["run_date"], errors="ignore")
@@ -77,7 +79,9 @@ def normalize_punctuality_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df = df.drop(columns=["reporting_period", "run_date"], errors="ignore")
 
-    previous_year_columns = [col for col in df.columns if col.startswith("previous_year_")]
+    previous_year_columns = [
+        col for col in df.columns if col.startswith("previous_year_")
+    ]
     df = df.drop(columns=previous_year_columns, errors="ignore")
 
     # Rename columns to a standard format
@@ -94,7 +98,7 @@ def normalize_punctuality_dataframe(df: pd.DataFrame) -> pd.DataFrame:
         "flights_between_61_and_120_minutes_late_percent": "61_to_120_mins_late_percent",
         "flights_between_121_and_180_minutes_late_percent": "121_to_180_mins_late_percent",
         "flights_between_181_and_360_minutes_late_percent": "181_to_360_mins_late_percent",
-        "flights_more_than_360_minutes_late_percent": "more_than_360_mins_late_percent"
+        "flights_more_than_360_minutes_late_percent": "more_than_360_mins_late_percent",
     }
 
     for source, target in rename_map.items():
@@ -119,7 +123,9 @@ def normalize_punctuality_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[mask, "early_to_15_mins_late_percent"] = (
         df.loc[mask, "15_mins_early_to_1_minute_early_percent"]
         + df.loc[mask, "0_to_15_mins_late_percent"]
-        + df.loc[mask, "more_than_15_mins_early_percent"]  # or whatever source expression you need
+        + df.loc[
+            mask, "more_than_15_mins_early_percent"
+        ]  # or whatever source expression you need
     )
 
     final_columns = [
@@ -194,7 +200,9 @@ def load_normalized_union_table(
             "Excluding destination table %s from source tables list",
             destination_table_name,
         )
-        source_table_names = [t for t in source_table_names if t != destination_table_name]
+        source_table_names = [
+            t for t in source_table_names if t != destination_table_name
+        ]
 
     raw_frames = []
     for table_name in source_table_names:
@@ -221,7 +229,9 @@ def load_normalized_union_table(
         destination_table_name,
         len(normalized),
     )
-    job = client.load_table_from_dataframe(normalized, destination_ref, job_config=job_config)
+    job = client.load_table_from_dataframe(
+        normalized, destination_ref, job_config=job_config
+    )
     job.result()
     logging.info(
         "Normalized BigQuery table loaded: %s.%s (%s rows)",
@@ -277,14 +287,16 @@ def load_csvs_to_table(
         logging.info("Downloading CSV from gs://%s/%s", bucket_name, blob.name)
         content = blob.download_as_bytes()
         df = read_csv_with_fallback(content)
-        frames.append(parse_punctuality_dataframe(df))  # Parse and normalize each CSV into a DataFrame
+        frames.append(
+            parse_punctuality_dataframe(df)
+        )  # Parse and normalize each CSV into a DataFrame
 
     data_frame = pd.concat(frames, ignore_index=True)
     table_ref = client.dataset(dataset_id).table(table_name)
     job_config = bigquery.LoadJobConfig(
         autodetect=True,
         write_disposition=bigquery.WriteDisposition.WRITE_TRUNCATE,
-        create_disposition=bigquery.CreateDisposition.CREATE_IF_NEEDED
+        create_disposition=bigquery.CreateDisposition.CREATE_IF_NEEDED,
     )
 
     logging.info(

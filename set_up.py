@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+
 import os
 import shutil
 import subprocess
@@ -7,6 +8,7 @@ import sys
 import time
 from pathlib import Path
 from typing import Dict
+
 import yaml
 
 ROOT = Path(__file__).resolve().parent
@@ -27,7 +29,7 @@ DEFAULT_ENV: Dict[str, str] = {
     "BIGQUERY_DATASET": "flight_data",
     "BIGQUERY_TABLE_PREFIX": "punctuality_data_",
     "BIGQUERY_LOCATION": "EU",
-    "GCP_PROJECT": ""  # No default for project since it's required
+    "GCP_PROJECT": "",  # No default for project since it's required
 }
 
 
@@ -46,7 +48,9 @@ def write_env_file() -> None:
     entries = [f"{key}={value}" for key, value in DEFAULT_ENV.items() if value]
     ENV_FILE.write_text("\n".join(entries) + ("\n" if entries else ""))
 
-    raise ValueError(f"{ENV_FILE} created with default values. Please edit it to set GCP_PROJECT and any other desired settings before running the container.")
+    raise ValueError(
+        f"{ENV_FILE} created with default values. Please edit it to set GCP_PROJECT and any other desired settings before running the container."
+    )
 
 
 def load_env_file() -> dict:
@@ -78,7 +82,9 @@ def load_env_file() -> dict:
     return parsed
 
 
-def run(cmd: list[str], cwd: Path | None = None, env: Dict[str, str] | None = None) -> None:
+def run(
+    cmd: list[str], cwd: Path | None = None, env: Dict[str, str] | None = None
+) -> None:
     print(f"Running: {' '.join(cmd)}")
     subprocess.run(cmd, cwd=cwd, check=True, env=env or os.environ.copy())
     print(f"Finished: {' '.join(cmd)}")
@@ -87,7 +93,9 @@ def run(cmd: list[str], cwd: Path | None = None, env: Dict[str, str] | None = No
 
 def gcloud_auth_docker(region: str) -> None:
     host = f"{region}-docker.pkg.dev"
-    credentials_path = Path(os.getenv("GOOGLE_APPLICATION_CREDENTIALS", INGEST_DIR / "gcloud-key.json"))
+    credentials_path = Path(
+        os.getenv("GOOGLE_APPLICATION_CREDENTIALS", INGEST_DIR / "gcloud-key.json")
+    )
     if not credentials_path.exists():
         print(
             "Error: Docker authentication is required to push to Artifact Registry. "
@@ -95,7 +103,9 @@ def gcloud_auth_docker(region: str) -> None:
         )
         sys.exit(1)
 
-    print(f"Using service account key {credentials_path} to log in to Docker host {host}.")
+    print(
+        f"Using service account key {credentials_path} to log in to Docker host {host}."
+    )
     time.sleep(2)
     subprocess.run(
         ["docker", "login", "-u", "_json_key", "--password-stdin", f"https://{host}"],
@@ -178,13 +188,19 @@ def create_streamlit_secrets_file(project: str) -> None:
 
     bigquery_dataset = os.getenv("BIGQUERY_DATASET", "flight_data")
     if not bigquery_dataset:
-        raise ValueError("BIGQUERY_DATASET environment variable is required to create Streamlit secrets file.")
+        raise ValueError(
+            "BIGQUERY_DATASET environment variable is required to create Streamlit secrets file."
+        )
 
-    secrets_content = f"""[bigquery]\nproject_id = "{project}"\ndataset = "{bigquery_dataset}"\n"""
+    secrets_content = (
+        f"""[bigquery]\nproject_id = "{project}"\ndataset = "{bigquery_dataset}"\n"""
+    )
 
     with open(secrets_file, "w") as f:
         f.write(secrets_content)
-    print(f"Created Streamlit secrets file at {secrets_file} with BigQuery project and dataset.")
+    print(
+        f"Created Streamlit secrets file at {secrets_file} with BigQuery project and dataset."
+    )
 
     return
 
@@ -210,15 +226,17 @@ def create_dbt_profiles_yml_file(project: str, region: str) -> None:
                     "timeout_seconds": 300,
                     "location": region,
                     "priority": "interactive",
-                    "retries": 1
+                    "retries": 1,
                 }
-            }
+            },
         }
     }
 
     with open(profiles_file, "w") as f:
         yaml.dump(profile_config, f, default_flow_style=False, sort_keys=False)
-    print(f"Created dbt profiles.yml file at {profiles_file} with BigQuery project and dataset.")
+    print(
+        f"Created dbt profiles.yml file at {profiles_file} with BigQuery project and dataset."
+    )
 
 
 def create_dbt_sources_file(project: str) -> None:
@@ -240,15 +258,17 @@ def create_dbt_sources_file(project: str) -> None:
                 "tables": [
                     {
                         "name": "punctuality_data_all_years",
-                        "description": "Raw BigQuery table imported from punctuality CSV data for all years."
+                        "description": "Raw BigQuery table imported from punctuality CSV data for all years.",
                     }
-                ]
+                ],
             }
-        ]
+        ],
     }
     with open(sources_file, "w") as sf:
         yaml.dump(sources_config, sf, default_flow_style=False, sort_keys=False)
-    print(f"Created dbt sources file at {sources_file} with table punctuality_data_all_years.")
+    print(
+        f"Created dbt sources file at {sources_file} with table punctuality_data_all_years."
+    )
 
     return
 
@@ -264,7 +284,9 @@ def main() -> None:
 
     project = os.getenv("GCP_PROJECT")
     if not project:
-        raise ValueError("GCP_PROJECT environment variable is required but not set. Please set it in the .env file or your environment before running this script.")
+        raise ValueError(
+            "GCP_PROJECT environment variable is required but not set. Please set it in the .env file or your environment before running this script."
+        )
 
     region = os.getenv("GCP_REGION") or "europe-west2"
 
@@ -278,7 +300,9 @@ def main() -> None:
     dbt_image = f"{region}-docker.pkg.dev/{project}/{repo}/{dbt_image_name}:{tag}"
 
     dashboard_image_name = os.getenv("DASHBOARD_IMAGE_NAME", "uk-flight-dashboard")
-    dashboard_image = f"{region}-docker.pkg.dev/{project}/{repo}/{dashboard_image_name}:{tag}"
+    dashboard_image = (
+        f"{region}-docker.pkg.dev/{project}/{repo}/{dashboard_image_name}:{tag}"
+    )
 
     check_program("docker")
     print("Verified required programs are available.")

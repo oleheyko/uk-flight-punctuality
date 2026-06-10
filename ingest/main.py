@@ -1,20 +1,16 @@
 import logging
 import os
+import time
 from pathlib import Path
 from urllib.parse import urljoin
-import time
 
 import requests
-from google.cloud import bigquery, storage
-
+from bigquery_utils import (ensure_dataset, load_csvs_to_table,
+                            load_normalized_union_table)
 from config import Config
+from google.cloud import bigquery, storage
 from scraper import fetch_page, parse_full_analysis_csv_links
 from storage import list_blob_names, upload_blob_if_missing
-from bigquery_utils import (
-    ensure_dataset,
-    load_csvs_to_table,
-    load_normalized_union_table,
-)
 
 
 def load_dotenv_file(env_path: Path) -> None:
@@ -41,9 +37,6 @@ def setup_logging() -> None:
         format="%(asctime)s %(levelname)s %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-
-
-
 
 
 def main() -> None:
@@ -88,7 +81,11 @@ def main() -> None:
         year_records = parse_full_analysis_csv_links(html, page_url)
         for record in year_records:
             if record["filename"] in seen_filenames:
-                logging.debug("Skipping duplicate filename %s from %s", record["filename"], page_url)
+                logging.debug(
+                    "Skipping duplicate filename %s from %s",
+                    record["filename"],
+                    page_url,
+                )
                 continue
             seen_filenames.add(record["filename"])
             records.append(record)
@@ -142,7 +139,9 @@ def main() -> None:
 
         time.sleep(2)  # Be polite and avoid hammering the server
 
-    logging.info("Ingest complete: uploaded=%d skipped=%d failed=%d", uploaded, skipped, failed)
+    logging.info(
+        "Ingest complete: uploaded=%d skipped=%d failed=%d", uploaded, skipped, failed
+    )
 
     if records:
         bq_client = (
@@ -171,7 +170,9 @@ def main() -> None:
                     skip_if_table_exists=not config.overwrite,
                 )
             except Exception as exc:
-                logging.exception("Failed to load BigQuery table for year %s: %s", year, exc)
+                logging.exception(
+                    "Failed to load BigQuery table for year %s: %s", year, exc
+                )
 
         logging.info(
             "Building normalized unioned BigQuery table from existing yearly tables in %s",

@@ -17,7 +17,9 @@ def get_bq_client(project: Optional[str] = None) -> bigquery.Client:
     return bigquery.Client(project=project) if project else bigquery.Client()
 
 
-def load_dbt_model_table(project: Optional[str], dataset: str, table: str) -> pd.DataFrame:
+def load_dbt_model_table(
+    project: Optional[str], dataset: str, table: str
+) -> pd.DataFrame:
     client = get_bq_client(project)
     table_ref = client.dataset(dataset).table(table)
     try:
@@ -60,7 +62,7 @@ def build_monthly_delay_chart(df: pd.DataFrame):
         return None
 
     # Ensure data is sorted by month
-    df = df.sort_values('month')
+    df = df.sort_values("month")
 
     fig = px.bar(
         df,
@@ -69,13 +71,26 @@ def build_monthly_delay_chart(df: pd.DataFrame):
         title="Average Delay by Month (Last Year)",
         labels={"month_name": "Month", "avg_delay_mins": "Average Delay (minutes)"},
         color="avg_delay_mins",
-        color_continuous_scale='Blues',
+        color_continuous_scale="Blues",
     )
     fig.update_layout(
-        xaxis=dict(categoryorder='array', categoryarray=[
-            'January', 'February', 'March', 'April', 'May', 'June',
-            'July', 'August', 'September', 'October', 'November', 'December'
-        ]),
+        xaxis=dict(
+            categoryorder="array",
+            categoryarray=[
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December",
+            ],
+        ),
         yaxis=dict(tickformat=",.0f", gridcolor="lightgrey"),
         margin=dict(l=40, r=20, t=60, b=40),
         title=dict(font=dict(size=18)),
@@ -89,20 +104,18 @@ def build_airport_delays_treemap(df: pd.DataFrame):
         return None
 
     # Sort by delay descending to prioritize larger delays in bigger boxes
-    df_sorted = df.sort_values('avg_delay_mins', ascending=False)
+    df_sorted = df.sort_values("avg_delay_mins", ascending=False)
 
     fig = px.treemap(
         df_sorted,
-        path=['reporting_airport'],
-        values='avg_delay_mins',
+        path=["reporting_airport"],
+        values="avg_delay_mins",
         title="Airport Delays in Most Recent Month",
-        color='avg_delay_mins',
-        color_continuous_scale='Reds',
+        color="avg_delay_mins",
+        color_continuous_scale="Reds",
     )
     fig.update_traces(
-        textfont_size=12,
-        textposition="middle center",
-        textinfo="label+value"
+        textfont_size=12, textposition="middle center", textinfo="label+value"
     )
     fig.update_layout(margin=dict(t=50, l=25, r=25, b=25))
     return fig
@@ -116,11 +129,17 @@ def load_dashboard_data(project_id: Optional[str], dataset: str):
         df = load_dbt_model_table(project_id or None, dataset, "fct_delay_over_years")
 
         # Load metrics
-        recent_date_df = load_dbt_model_table(project_id or None, dataset, "fct_recent_published_date")
-        tracked_flights_df = load_dbt_model_table(project_id or None, dataset, "fct_recent_number_tracked_flights")
+        recent_date_df = load_dbt_model_table(
+            project_id or None, dataset, "fct_recent_published_date"
+        )
+        tracked_flights_df = load_dbt_model_table(
+            project_id or None, dataset, "fct_recent_number_tracked_flights"
+        )
 
         # Load monthly delay data
-        monthly_delay_df = load_dbt_model_table(project_id or None, dataset, "fct_delay_vs_month_last_year")
+        monthly_delay_df = load_dbt_model_table(
+            project_id or None, dataset, "fct_delay_vs_month_last_year"
+        )
 
         return df, recent_date_df, tracked_flights_df, monthly_delay_df
     except Exception as e:
@@ -146,28 +165,47 @@ def main():
 
     try:
         # Try Streamlit secrets first (for production)
-        project_id = st.secrets.get("bigquery", {}).get("project_id") or os.getenv("BIGQUERY_PROJECT", "")
-        dataset = st.secrets.get("bigquery", {}).get("dataset") or os.getenv("BIGQUERY_DATASET", "flight_data")
+        project_id = st.secrets.get("bigquery", {}).get("project_id") or os.getenv(
+            "BIGQUERY_PROJECT", ""
+        )
+        dataset = st.secrets.get("bigquery", {}).get("dataset") or os.getenv(
+            "BIGQUERY_DATASET", "flight_data"
+        )
     except:
         # Fallback to environment variables
         project_id = os.getenv("BIGQUERY_PROJECT", "")
         dataset = os.getenv("BIGQUERY_DATASET", "flight_data")
 
     # Load data
-    df, recent_date_df, tracked_flights_df, monthly_delay_df = load_dashboard_data(project_id or None, dataset)
+    df, recent_date_df, tracked_flights_df, monthly_delay_df = load_dashboard_data(
+        project_id or None, dataset
+    )
 
     if df is not None:
         # Display metrics
         col1, col2 = st.columns(2)
         with col1:
-            if recent_date_df is not None and not recent_date_df.empty and "recent_published_date" in recent_date_df.columns:
-                st.metric("Most Recent Data", recent_date_df["recent_published_date"].iloc[0])
+            if (
+                recent_date_df is not None
+                and not recent_date_df.empty
+                and "recent_published_date" in recent_date_df.columns
+            ):
+                st.metric(
+                    "Most Recent Data", recent_date_df["recent_published_date"].iloc[0]
+                )
             else:
                 st.metric("Most Recent Data", "N/A")
 
         with col2:
-            if tracked_flights_df is not None and not tracked_flights_df.empty and "total_tracked_flights" in tracked_flights_df.columns:
-                st.metric("Total Tracked Flights", f"{tracked_flights_df['total_tracked_flights'].iloc[0]:,}")
+            if (
+                tracked_flights_df is not None
+                and not tracked_flights_df.empty
+                and "total_tracked_flights" in tracked_flights_df.columns
+            ):
+                st.metric(
+                    "Total Tracked Flights",
+                    f"{tracked_flights_df['total_tracked_flights'].iloc[0]:,}",
+                )
             else:
                 st.metric("Total Tracked Flights", "N/A")
 
@@ -190,7 +228,12 @@ def main():
         # Monthly average delay chart for last year
         st.subheader("Average Delay by Month (Last Year)")
 
-        if monthly_delay_df is not None and not monthly_delay_df.empty and "month_name" in monthly_delay_df.columns and "avg_delay_mins" in monthly_delay_df.columns:
+        if (
+            monthly_delay_df is not None
+            and not monthly_delay_df.empty
+            and "month_name" in monthly_delay_df.columns
+            and "avg_delay_mins" in monthly_delay_df.columns
+        ):
             monthly_chart = build_monthly_delay_chart(monthly_delay_df)
             if monthly_chart is not None:
                 st.plotly_chart(monthly_chart, use_container_width=True)
@@ -203,8 +246,14 @@ def main():
         st.subheader("Recent Airport Delays")
 
         try:
-            df_treemap = load_dbt_model_table(project_id or None, dataset, "fct_recent_airport_delays")
-            if not df_treemap.empty and "reporting_airport" in df_treemap.columns and "avg_delay_mins" in df_treemap.columns:
+            df_treemap = load_dbt_model_table(
+                project_id or None, dataset, "fct_recent_airport_delays"
+            )
+            if (
+                not df_treemap.empty
+                and "reporting_airport" in df_treemap.columns
+                and "avg_delay_mins" in df_treemap.columns
+            ):
                 treemap_chart = build_airport_delays_treemap(df_treemap)
                 if treemap_chart is not None:
                     st.plotly_chart(treemap_chart, use_container_width=True)
@@ -217,10 +266,15 @@ def main():
             st.exception(error)
 
     else:
-        st.error("Unable to load dashboard data. Please check your BigQuery configuration.")
+        st.error(
+            "Unable to load dashboard data. Please check your BigQuery configuration."
+        )
 
     # Footer
     st.divider()
-    st.caption("Dashboard automatically refreshes data every hour. Built with Streamlit and powered by BigQuery.")
+    st.caption(
+        "Dashboard automatically refreshes data every hour. Built with Streamlit and powered by BigQuery."
+    )
+
 
 main()

@@ -41,12 +41,17 @@ class Config:
         if not bucket_name:
             raise ValueError("BUCKET_NAME is required")
 
-        caa_base_url = os.getenv("CAA_BASE_URL", "https://www.caa.co.uk/data-and-analysis/uk-aviation-market/flight-punctuality/uk-flight-punctuality-statistics/")
+        caa_base_url = os.getenv(
+            "CAA_BASE_URL",
+            "https://www.caa.co.uk/data-and-analysis/uk-aviation-market/flight-punctuality/uk-flight-punctuality-statistics/",
+        )
 
         start_year = int(os.getenv("CAA_YEAR_START", "2000"))
         end_year = int(os.getenv("CAA_YEAR_END", datetime.now().year))
         if start_year < 2000 or end_year < start_year:
-            raise ValueError("CAA_YEAR_START must be >= 2000 and CAA_YEAR_END must be >= CAA_YEAR_START")
+            raise ValueError(
+                "CAA_YEAR_START must be >= 2000 and CAA_YEAR_END must be >= CAA_YEAR_START"
+            )
 
         gcs_prefix = os.getenv("GCS_PREFIX", "raw/").strip()
         overwrite = parse_bool(os.getenv("OVERWRITE", "false"), default=False)
@@ -54,7 +59,9 @@ class Config:
 
         bigquery_project = os.getenv("GCP_PROJECT", "").strip()
         bigquery_dataset = os.getenv("BIGQUERY_DATASET", "flight_data").strip()
-        bigquery_table_prefix = os.getenv("BIGQUERY_TABLE_PREFIX", "punctuality_data_").strip()
+        bigquery_table_prefix = os.getenv(
+            "BIGQUERY_TABLE_PREFIX", "punctuality_data_"
+        ).strip()
         bigquery_location = os.getenv("GCP_REGION", "EU").strip()
 
         return cls(

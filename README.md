@@ -86,7 +86,7 @@ sudo apt update && sudo apt install terraform
    - `GCP_REGION`: europe-west2 (or the region you specified in Terraform variables)
    - `GCP_SA_KEY`: The contents of your service account JSON key file
 To find secrets, please, navigate to your repository on GitHub -> Settings -> Secrets and variables -> Actions -> New repository secret.
-10. Run `uv run set_up.py --project <YOUR_GCP_PROJECT_ID>` to set up the environment. This creates dbt profiles for BigQuery authentication and builds Docker images for the ingest, dbt, and dashboard applications, pushing them to Google Container Registry.
+10. Run `uv run set_up.py` to set up the environment. This creates dbt profiles for BigQuery authentication and builds Docker images for the ingest, dbt, and dashboard applications, pushing them to Google Container Registry.
 
 ### Schedule GitHub workflows
 The last step 10 is necessary to set up the environment and build Docker images for Cloud Run. However, you can skip it if you only want to run the ingestion, dbt, and dashboard applications locally. The GitHub workflows are configured to use the images built by this setup script, so if you skip it, the workflows will fail to run in Cloud Run until you build and push the images manually.

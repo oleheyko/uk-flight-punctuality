@@ -4,12 +4,11 @@ from typing import Dict, List
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
-
 from utils import build_record_filename, extract_reporting_period
 
 pattern = re.compile(
-    r'^(?!.*(?:Arrival\s*Departure|Arr\s*Dep|ArrDep))(?=.*Full\s*Analysis).*$',
-    re.IGNORECASE
+    r"^(?!.*(?:Arrival\s*Departure|Arr\s*Dep|ArrDep))(?=.*Full\s*Analysis).*$",
+    re.IGNORECASE,
 )
 
 
@@ -42,7 +41,10 @@ def parse_full_analysis_csv_links(html: str, base_url: str) -> List[Dict[str, st
 
         reporting_period = extract_reporting_period(link_text)
         if not reporting_period:
-            logging.debug("Skipping link because reporting period could not be extracted: %s", link_text)
+            logging.debug(
+                "Skipping link because reporting period could not be extracted: %s",
+                link_text,
+            )
             continue
 
         url = urljoin(base_url, href)
