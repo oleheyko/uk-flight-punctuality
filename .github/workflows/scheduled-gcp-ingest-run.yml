@@ -49,6 +49,7 @@ jobs:
               --region "$GCP_REGION" \
               --task-timeout 3600 \
               --max-retries 0 \
+              --memory 2Gi \
               --set-env-vars BUCKET_NAME="$BUCKET_NAME",GCS_PREFIX="$GCS_PREFIX",OVERWRITE="$OVERWRITE",REQUEST_TIMEOUT="$REQUEST_TIMEOUT",BIGQUERY_DATASET="$BIGQUERY_DATASET",BIGQUERY_TABLE_PREFIX="$BIGQUERY_TABLE_PREFIX",CAA_BASE_URL="$CAA_BASE_URL"
           else
             gcloud run jobs create "$JOB_NAME" \
@@ -56,6 +57,7 @@ jobs:
               --region "$GCP_REGION" \
               --task-timeout 3600 \
               --max-retries 0 \
+              --memory 2Gi \
               --set-env-vars BUCKET_NAME="$BUCKET_NAME",GCS_PREFIX="$GCS_PREFIX",OVERWRITE="$OVERWRITE",REQUEST_TIMEOUT="$REQUEST_TIMEOUT",BIGQUERY_DATASET="$BIGQUERY_DATASET",BIGQUERY_TABLE_PREFIX="$BIGQUERY_TABLE_PREFIX",CAA_BASE_URL="$CAA_BASE_URL"
           fi
 
