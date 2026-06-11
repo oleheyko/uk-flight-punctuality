@@ -12,6 +12,7 @@ dependencies = [
     "pandas>=2.3.3",
     "pyarrow>=15,<18",
     "pandas-gbq>=0.35.0",
+    "db-dtypes",
     "dbt",
     "dbt-bigquery==1.11.1",
     "google-cloud>=0.34.0",

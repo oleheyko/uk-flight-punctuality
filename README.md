@@ -30,36 +30,9 @@ As a frequent flyer, I have always wondered which UK airlines, airports, and rou
 
 # Architecture
 
-The high-level architecture of the project (ingest → storage → transformation → dashboard):
+The high-level architecture of the project:
 
-```mermaid
-flowchart LR
-  subgraph Ingest
-    direction LR
-    A["Ingest service<br/>(ingest/main.py)"]
-    GCS[("Cloud Storage")]
-    A -->|"Upload CSVs"| GCS
-  end
-
-   GCS -->|"BigQuery load jobs"| B["BigQuery<br/>raw dataset"]
-
-  subgraph Transform
-    direction LR
-    C["dbt<br/>(Cloud Run job / CI)"]
-    D["BigQuery<br/>Marts"]
-    B --> C --> D
-  end
-
-  subgraph Serve
-    direction LR
-    E["Streamlit<br/>(dashboard/app.py on GCP)"]
-    F["Browser"]
-    D --> E -->|"Users"| F
-  end
-
-   O["GitHub Actions<br/>(Scheduler / Orchestrator)"] --> A
-   O --> C
-```
+![image](readme_figs/architecture_diagram.png)
 
 
 # Getting Started
@@ -118,7 +91,7 @@ uk_flight_punctuality:              # your profile name (same as in dbt_project.
       retries: 1
 ```
 Make sure to replace `path/to/your/service_account_key.json` with the actual path to your service account key file (e.g., `../keys/my-creds.json` if your `profiles.yml` is in the `dbt/` directory and your key is in the `keys/` directory at the root of the repo).
-- You also need to set the sources for dbt. In `dbt/models/staging/sources.yml`, update the `database` field to your Google Cloud project ID.
+- You also need to set the sources for dbt. In `dbt/models/staging/sources.yml`, update the `project` field to your Google Cloud project ID.
 - Navigate to dbt folder through the terminal - `cd dbt`. Run dbt transformations: `uv run dbt run`.
 - Run Streamlit dashboard: `uv run streamlit run dashboard/app.py`. This will start the Streamlit app locally, which you can access at `http://localhost:8501` or the link provided in the terminal output. In VS Code, you can also click on Ports in the bottom panel, find the forwarded port for Streamlit, and click "Open in Browser" to access the dashboard. If your browser doesn't open the dashboard, try another browser.
 
@@ -224,8 +197,6 @@ The Streamlit dashboard provides the following visualizations and interactive co
 ![image](readme_figs/streamlit_dashboard.png)
 
 # Future Improvements / Work in Progress
-- Add black/isort pre-commit hooks for code formatting and linting.
-- Delete irrelevant data models in dbt/intermediate/ and dbt/marts/ that are not used by the Streamlit app to reduce confusion and maintenance overhead.
 - Simplify the terminal commands for running the ingestion, dbt, and dashboard applications locally by creating dedicated scripts or Makefile targets that encapsulate the necessary environment variable exports and command invocations.
 - Add dbt models comparing low-cost airlines flying from UK.
 - Add interactive filters to the Streamlit dashboard to allow users to explore delays by airline, origin/destination pairs, and other dimensions.
