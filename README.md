@@ -207,6 +207,8 @@ The Streamlit dashboard provides the following visualizations and interactive co
 - Simplify the terminal commands for running the ingestion, dbt, and dashboard applications locally by creating dedicated scripts or Makefile targets that encapsulate the necessary environment variable exports and command invocations.
 - Add dbt models comparing low-cost airlines flying from UK.
 - Add interactive filters to the Streamlit dashboard to allow users to explore delays by airline, origin/destination pairs, and other dimensions.
+- Refactor the data ingestion code to be more modular and reusable.
+- Standardise the file names when downloading and processing the data to avoid issues with inconsistent naming conventions across years.
 
 # Thank you!
 Thank you for checking out this project! If you have any questions or feedback, feel free to open an issue or reach out to me by 47990682+oleheyko@users.noreply.github.com. 
